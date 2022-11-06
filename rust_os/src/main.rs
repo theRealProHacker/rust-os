@@ -1,11 +1,12 @@
 #![no_std]
 #![no_main]
-#![feature(core_intrinsics)]
+#![feature(generic_arg_infer)]
 
 use core::arch::global_asm;
-use core::arch::asm;
-use volatile_register::WO;
+use core::fmt::Write;
+use volatile_register::{WO, RW, RO};
 
+// setup
 global_asm!(include_str!("start.S"));
 
 #[panic_handler]
@@ -13,59 +14,80 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
   loop {}
 }
 
-const PIOB: u32 = 0xfffff600;
-const YELLOW_LED: u32  = 1 << 27;
+// consts
+const DBGU: u32 = 0xFFFFF200;
+const RXEN: u32 = 1 << 4;
+const TXEN: u32 = 1 << 6;
+const RXRDY: u32 = 1 << 0;
+const TXRDY: u32 = 1 << 1;
 
-// Hier nutzen wir eine C-ähnliche Implementation mit Structs
-// Die Register werden als Write-Only abstrahiert, so wie es auch in der Dokumentation steht. 
 #[repr(C)]
-struct LED {
-  pub per: WO<u32>,
-  unused0: [u32;3],
-  pub oer: WO<u32>,
-  unused1: [u32;7],
-  pub sodr: WO<u32>,
-  pub codr: WO<u32>,
+struct Serial {
+    pub control: WO<u32>,
+    mode: RW<u32>,
+    interrupts: [u32;3],
+    pub status: RO<u32>,
+    pub receive: RO<u32>,
+    pub transmit: WO<u32>,
 }
 
-#[inline(always)]
-pub fn nop() {
-    unsafe {
-        asm!("nop", options(nomem, nostack, preserves_flags))
-    };
+impl Serial {
+    #[inline(always)]
+    fn init(&mut self) -> &mut Serial {
+        unsafe {
+            self.control.write(RXEN & TXEN);
+        }
+        self
+    }
+
+    /// Receive ready?
+    #[inline(always)]
+    fn rx_ready(&self) -> bool {
+        (self.status.read() & RXRDY) != 0
+    }
+
+    /// Transmit ready?
+    #[inline(always)]
+    fn tx_ready(&self) -> bool {
+        (self.status.read() & TXRDY) != 0
+    }
+
+    /// Liest einen char 
+    #[inline(always)]
+    fn read(&self) -> u8 {
+        while !self.rx_ready() {}
+        self.receive.read() as u8
+    }
+    
+    /// Schreibt einen char
+    #[inline(always)]
+    fn write(&self, char: u8) {
+        while !self.tx_ready() {}
+        unsafe {
+            self.transmit.write(char.into());
+        }
+    }
 }
 
-fn delay(x: u32) {
-  for _ in 1..x {
-    nop();
-  }
+impl Write for Serial {
+    #[inline(always)]
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        for &char in s.as_bytes() {
+            self.write(char);
+        }
+        Ok(())
+    }
 }
 
 #[no_mangle]
-extern "C" fn yellow_on() {
-  unsafe {
-    // Hier machen wir etwas "Verbotenes". Wir casten den Adressbereich ab PIOB zu einem LED-Struct
-    let led: &mut LED = &mut *(PIOB as *mut LED);
-    /* Initialisieren */
-    led.per.write(YELLOW_LED);
-    led.oer.write(YELLOW_LED);
-    /* Anschalten */
-    loop {
-      led.sodr.write(YELLOW_LED);
-      delay(100_000);
-      led.codr.write(YELLOW_LED);
-      delay(100_000);
+extern "C" fn cat() {
+    let serial: &mut Serial;
+    unsafe {
+        serial = (&mut *(DBGU as *mut Serial)).init();
     }
-  }
+    writeln!(serial, "Starting up").unwrap();
+    loop {
+        let c: u8 = serial.read();
+        writeln!(serial, "You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c).unwrap();
+    }
 }
-
-// Printf Überlegung
-// Wir nehmen an, dass wir eine Funktion writeString haben, die auf die serielle Schnittstelle schreibt.
-// Es gibt eigentlich ein crate, das genau printf ohne libc implementiert. Die Frage ist, ob wir das einfach so,
-// aber natürlich mit Quellenangabe, benutzen dürfen.
-// Stattdessen gehe ich jetzt durch willcrichton.net (Link im README) durch.
-// Die Hauptidee ist LinkedLists zu benutzen, um sowohl das Format als auch die angegebenen Variablen zu speichern
-// printf soll ein Makro sein, damit es unbegrenztt viele Argumente verschiedenen Types annehmen kann.
-// fn printf(s: &str) {
-
-// }
