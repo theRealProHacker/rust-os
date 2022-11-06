@@ -1,6 +1,6 @@
 .section .init
 .global _start
 _start:
-    bl yellow_on
+    bl cat
 .Lend:
     b .Lend
