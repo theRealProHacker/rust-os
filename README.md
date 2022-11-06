@@ -1,6 +1,11 @@
 # Betriebssysteme-WiSe22
 
-## Requirements
+## Für das bauen und ausführen auf Andorra
+```$ make```
+
+(Holt sich die Rust binarys zum compilieren von /home/mi/jbork läd aber die sonderfunktionen (nightly version, dependancys, etc) nochmal extra - das dauert leider ein wenig.)
+
+## Bauen auf eigenem Gerät und ausführen auf Andorra:
 
 - Download und install GNU Arm Embedded Toolchain (https://developer.arm.com/downloads/-/gnu-rm)  
 (for linux just download and set PATH)
@@ -23,4 +28,6 @@ Cargo gibt nun Anweisungen für weitere installationen (e.g. nightly build, core
     /.../qemu-bsprak -kernel kernel -piotelnet
     telnet localhost 44444
     ```
+## Ausführen auf eigenem Gerät
+ToDo
 
