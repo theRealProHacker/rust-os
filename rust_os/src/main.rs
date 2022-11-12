@@ -2,12 +2,12 @@
 #![no_main]
 #![feature(generic_arg_infer)]
 
-use core::arch::global_asm;
+// use core::arch::global_asm;
 use core::fmt::Write;
 use volatile_register::{WO, RW, RO};
 
 // setup
-global_asm!(include_str!("start.S"));
+// global_asm!(include_str!("start.S"));
 
 #[panic_handler]
 fn panic_handler(_: &core::panic::PanicInfo) -> ! {
@@ -79,8 +79,9 @@ impl Write for Serial {
     }
 }
 
+#[link_section = ".init"]
 #[no_mangle]
-extern "C" fn cat() {
+extern "C" fn _start() {
     let serial: &mut Serial;
     unsafe {
         serial = (&mut *(DBGU as *mut Serial)).init();
