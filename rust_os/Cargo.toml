@@ -7,11 +7,16 @@ edition = "2021"
 
 [dependencies]
 volatile-register = "0.2.1"
+# spin = "0.5.2"
 
 [[bin]]
 name = "rust-os"
 test = false
 bench = false
+
+# [dependencies.lazy_static]
+# version = "1.4"
+# features = ["spin_no_std"]
 
 [profile.dev]
 panic = "abort"
