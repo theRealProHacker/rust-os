@@ -3,6 +3,7 @@
 #![feature(generic_arg_infer)]
 
 mod exceptions;
+mod memory_controller;
 mod serial;
 use serial::read;
 
