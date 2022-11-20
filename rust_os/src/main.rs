@@ -10,8 +10,6 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
   loop {}
 }
 
-// TODO: get a lazy static here
-
 #[link_section = ".init"]
 #[no_mangle]
 extern "C" fn _start() {

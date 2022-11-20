@@ -20,7 +20,7 @@ struct Serial {
 }
 
 impl Serial {
-    fn get_serial() -> &'static mut Serial {
+    fn new() -> &'static mut Serial {
         unsafe {(&mut *(DBGU as *mut Serial)).init()}
     }
 
@@ -71,10 +71,6 @@ impl Write for Serial {
     }
 }
 
-fn get_serial() -> &'static mut Serial {
-    unsafe {(&mut *(DBGU as *mut Serial)).init()}
-}
-
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
@@ -88,9 +84,9 @@ macro_rules! print {
 
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
-    Serial::get_serial().write_fmt(args).unwrap();
+    Serial::new().write_fmt(args).unwrap();
 }
 
 pub fn read() -> u8 {
-    Serial::get_serial().read()
+    Serial::new().read()
 }
