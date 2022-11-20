@@ -32,6 +32,7 @@ extern "C" fn swi_handler() -> ! {
   loop {}
 }
 
+#[inline(always)]
 fn raise_data_abort() {
   unsafe {
     write_volatile(0x20_1001 as *mut _,  0);
@@ -54,5 +55,6 @@ extern "C" fn _start() {
     loop {
         let c: u8 = read();
         println!("You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c);
+        raise_data_abort();
     }
 }
