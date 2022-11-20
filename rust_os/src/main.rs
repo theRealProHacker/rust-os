@@ -36,7 +36,12 @@ extern "C" fn swi_handler() -> ! {
 extern "C" fn _start() {
     println!("Starting up");
     memory_controller::remap();
-    let handler = exceptions::ExceptionHandler::new();
+    let exception_handler = exceptions::ExceptionHandler::new();
+    unsafe {
+      exception_handler.data_abort_handler.write(data_abort_handler as u32);
+      exception_handler.undef_handler.write(undef_handler as u32);
+      exception_handler.swi_handler.write(swi_handler as u32);
+    };
     loop {
         let c: u8 = read();
         println!("You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c);
