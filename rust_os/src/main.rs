@@ -12,6 +12,25 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
   loop {}
 }
 
+extern "C" fn data_abort_handler() -> ! {
+  // Wir müssen nichts machen, da wir nie zurückspringen
+  println!("Data Abort");
+  loop {}
+}
+
+extern "C" fn undef_handler() -> ! {
+  // Wir müssen nichts machen, da wir nie zurückspringen
+  println!("Undefined Instruction");
+  loop {}
+}
+
+extern "C" fn swi_handler() -> ! {
+  // Wir müssen nichts machen, da wir nie zurückspringen
+  println!("Software Interrupt");
+  loop {}
+}
+
+
 #[link_section = ".init"]
 #[no_mangle]
 extern "C" fn _start() {
