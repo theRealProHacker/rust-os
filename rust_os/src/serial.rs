@@ -20,6 +20,10 @@ struct Serial {
 }
 
 impl Serial {
+    fn get_serial() -> &'static mut Serial {
+        unsafe {(&mut *(DBGU as *mut Serial)).init()}
+    }
+
     #[inline(always)]
     fn init(&mut self) -> &mut Self {
         unsafe {
@@ -84,9 +88,9 @@ macro_rules! print {
 
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
-    get_serial().write_fmt(args).unwrap();
+    Serial::get_serial().write_fmt(args).unwrap();
 }
 
 pub fn read() -> u8 {
-    get_serial().read()
+    Serial::get_serial().read()
 }
