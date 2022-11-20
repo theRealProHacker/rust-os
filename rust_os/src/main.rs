@@ -5,6 +5,8 @@
 mod exceptions;
 mod memory_controller;
 mod serial;
+use core::ptr::write_volatile;
+
 use serial::read;
 
 #[panic_handler]
@@ -29,6 +31,13 @@ extern "C" fn swi_handler() -> ! {
   println!("Software Interrupt");
   loop {}
 }
+
+fn raise_data_abort() {
+  unsafe {
+    write_volatile(0x20_1001 as *mut _,  0);
+  }
+}
+
 
 
 #[link_section = ".init"]
