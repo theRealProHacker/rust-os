@@ -46,11 +46,11 @@ fn raise_data_abort() {
 extern "C" fn _start() {
     println!("Starting up");
     memory_controller::remap();
-    let exception_handler = exceptions::ExceptionHandler::new();
+    let exceptions = exceptions::ExceptionTable::new();
     unsafe {
-      exception_handler.data_abort_handler.write(data_abort_handler as u32);
-      exception_handler.undef_handler.write(undef_handler as u32);
-      exception_handler.swi_handler.write(swi_handler as u32);
+      exceptions.data_abort_handler.write(data_abort_handler as u32);
+      exceptions.undef_handler.write(undef_handler as u32);
+      exceptions.swi_handler.write(swi_handler as u32);
     };
     loop {
         let c: u8 = read();

@@ -4,7 +4,7 @@ use volatile_register::WO;
 const IVT: u32 = 0;
 
 #[repr(C)]
-pub struct ExceptionHandler {
+pub struct ExceptionTable {
   // Eigentlich RW, aber wir sollten hier nicht lesen
   reset: WO<u32>,
   undef: WO<u32>,
@@ -23,7 +23,7 @@ pub struct ExceptionHandler {
   pub data_abort_handler: WO<u32>,
 }
 
-impl ExceptionHandler {
+impl ExceptionTable {
   pub fn new() -> &'static mut Self {
     unsafe {(&mut *(IVT as *mut Self)).init()}
   }
