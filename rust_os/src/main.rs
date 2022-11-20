@@ -16,7 +16,7 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 #[no_mangle]
 extern "C" fn _start() {
     println!("Starting up");
-    
+    memory_controller::remap();
     // let handler = exceptions::ExceptionHandler::new();
     loop {
         let c: u8 = read();
