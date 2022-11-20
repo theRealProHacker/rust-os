@@ -2,6 +2,7 @@
 #![no_main]
 #![feature(generic_arg_infer)]
 
+mod exceptions;
 mod serial;
 use serial::read;
 
