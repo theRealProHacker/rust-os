@@ -32,7 +32,7 @@ impl ExceptionTable {
     unsafe{
       // Hier müssen wir in die Register den assembly code reinschreiben, der in den handler springt, der in den handler-Registern steht
       // https://armconverter.com/?code=ldr%20pc,%20%5Bpc,%20%230x14%5D 
-      const ASM_AS_BYTES: u32 = 0x14F09FE5;
+      const ASM_AS_BYTES: u32 = 0xE59FF014;
       self.undef.write(ASM_AS_BYTES);
       self.swi.write(ASM_AS_BYTES);
       // self.prefetch.write(asm_as_bytes); Not needed
