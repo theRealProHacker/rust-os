@@ -6,7 +6,7 @@
 mod exceptions;
 mod memory_controller;
 mod serial;
-use core::{ptr::read_volatile, arch::asm};
+use core::{ptr::{read_volatile, write_volatile}, arch::asm};
 
 use serial::read;
 
@@ -29,12 +29,13 @@ extern "C" fn undef_handler() -> ! {
 
 extern "C" fn swi_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
-  unsafe{
-    asm!(
-      "str {r}, [{addr}]",
-      r = in(reg) b'u',
-      addr = in(reg) 0xFFFFF214u32,
-    );
+  unsafe {
+    write_volatile(&mut *(0xFFFFF214 as *mut _), b'u' as u32);
+    // asm!(
+    //   "str {r}, [{addr}]",
+    //   r = in(reg) b'u',
+    //   addr = in(reg) 0xFFFFF214u32,
+    // );
   }
   loop {}
 }
