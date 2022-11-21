@@ -33,14 +33,14 @@ extern "C" fn swi_handler() -> ! {
 }
 
 #[inline(always)]
-fn raise_data_abort() {
+extern "C" fn raise_data_abort() {
   let _ : u32 = unsafe { read_volatile(
     0x400000 as *mut u32) 
   };
 }
 
 #[inline(always)]
-fn raise_swi() {
+extern "C" fn raise_swi() {
   unsafe{
     asm!(
       "swi 0"
