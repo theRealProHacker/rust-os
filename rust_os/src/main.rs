@@ -52,7 +52,7 @@ extern "C" fn raise_swi() {
 extern "C" fn raise_undef() {
   unsafe {
     asm!(
-      "ldr r0 #0xFFFFFFFFFFFF"
+      ".word 0xFFFFFFFF"
     )
   }
 }
