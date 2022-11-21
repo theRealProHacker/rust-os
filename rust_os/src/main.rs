@@ -31,9 +31,9 @@ extern "C" fn swi_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
   unsafe{
     asm!(
-      "str {r} [{addr}]",
+      "str {r}, [{addr}]",
       r = in(reg) b'u',
-      addr = in(reg) 0xFFFFF214u32
+      addr = in(reg) 0xFFFFF214u32,
     );
   }
   loop {}
