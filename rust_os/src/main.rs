@@ -41,9 +41,18 @@ extern "C" fn raise_data_abort() {
 
 #[inline(always)]
 extern "C" fn raise_swi() {
-  unsafe{
+  unsafe {
     asm!(
       "swi 0"
+    )
+  }
+}
+
+#[inline(always)]
+extern "C" fn raise_undef() {
+  unsafe {
+    asm!(
+      "ldr r0 #0xFFFFFFFFFFFF"
     )
   }
 }
