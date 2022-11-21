@@ -5,7 +5,7 @@
 mod exceptions;
 mod memory_controller;
 mod serial;
-use core::ptr::write_volatile;
+use core::{ptr::{write_volatile, read_volatile}, arch::asm};
 
 use serial::read;
 
@@ -34,11 +34,19 @@ extern "C" fn swi_handler() -> ! {
 
 #[inline(always)]
 fn raise_data_abort() {
-  unsafe {
-    write_volatile(0x20_1001 as *mut _,  0);
-  }
+  let _ : u32 = unsafe { read_volatile(
+    0x400000 as *mut u32) 
+  };
 }
 
+#[inline(always)]
+fn raise_swi() {
+  unsafe{
+    asm!(
+      "swi 0"
+    )
+  }
+}
 
 
 #[link_section = ".init"]
@@ -55,6 +63,6 @@ extern "C" fn _start() {
     loop {
         let c: u8 = read();
         println!("You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c);
-        raise_data_abort();
+        raise_swi();
     }
 }
