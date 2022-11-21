@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(generic_arg_infer)]
+#![feature(naked_functions)]
 
 mod exceptions;
 mod memory_controller;
@@ -33,14 +34,14 @@ extern "C" fn swi_handler() -> ! {
 }
 
 #[inline(always)]
-extern "C" fn raise_data_abort() {
+fn raise_data_abort() {
   let _ : u32 = unsafe { read_volatile(
     0x400000 as *mut u32) 
   };
 }
 
 #[inline(always)]
-extern "C" fn raise_swi() {
+fn raise_swi() {
   unsafe {
     asm!(
       "swi 0"
@@ -49,7 +50,7 @@ extern "C" fn raise_swi() {
 }
 
 #[inline(always)]
-extern "C" fn raise_undef() {
+fn raise_undef() {
   unsafe {
     asm!(
       ".word 0xFFFFFFFF"

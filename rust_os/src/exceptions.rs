@@ -31,7 +31,8 @@ impl ExceptionTable {
   fn init(&mut self)->&mut Self{
     unsafe{
       // Hier müssen wir in die Register den assembly code reinschreiben, der in den handler springt, der in den handler-Registern steht
-      // https://armconverter.com/?code=ldr%20pc,%20%5Bpc,%20%230x14%5D 
+      // https://armconverter.com/?code=ldr%20pc,%20%5Bpc,%20%230x14%5D
+      // Wir haben little-endian und big-endian versucht, aber nur big hat funktioniert
       const ASM_AS_BYTES: u32 = 0xE59FF014;
       self.undef.write(ASM_AS_BYTES);
       self.swi.write(ASM_AS_BYTES);
@@ -42,4 +43,15 @@ impl ExceptionTable {
   }
 
   // Jetzt kann man handler in die handler-Register reinschreiben
+}
+
+/// | Modus | Stackpointer Adresse |
+/// |-------|----------------------|
+/// | svc (reset) | 0x0021 00FF |
+/// | und (undef. instr.) | 0x0021 01FF |
+/// | abt (abort) | 0x0021 02FF |
+/// | irq | 0x0021 03FF |
+/// | fiq | 0x0021 04FF |
+fn init_sps () {
+  
 }

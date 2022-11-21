@@ -1,11 +1,11 @@
-/// Einfach nur die Funktion, um das ROM schreiben zu enablen
+/// Einfach nur die Funktion, um das IVT schreiben zu enablen
 use core::ptr::write_volatile;
 
 
-
+// S. 128 v 701
 const MEMORY_CONTROLLER: u32 = 0xFFFFFF00;
 
-/// remap ermöglicht uns in den ROM zu schreiben
+/// MC remap
 pub fn remap() {
     unsafe{
         // Wir setzen das erste Bit

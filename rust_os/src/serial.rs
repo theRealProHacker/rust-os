@@ -20,7 +20,7 @@ struct Serial {
 }
 
 impl Serial {
-    fn new() -> &'static mut Serial {
+    pub fn new() -> &'static mut Serial {
         unsafe {(&mut *(DBGU as *mut Serial)).init()}
     }
 
@@ -46,14 +46,14 @@ impl Serial {
 
     /// Liest einen char 
     #[inline(always)]
-    fn read(&self) -> u8 {
+    pub fn read(&self) -> u8 {
         while !self.rx_ready() {}
         self.receive.read() as u8
     }
     
     /// Schreibt einen char
     #[inline(always)]
-    fn write(&self, char: u8) {
+    pub fn write(&self, char: u8) {
         while !self.tx_ready() {}
         unsafe {
             self.transmit.write(char.into());
