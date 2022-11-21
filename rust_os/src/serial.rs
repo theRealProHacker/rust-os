@@ -10,7 +10,7 @@ const RXRDY: u32 = 1 << 0;
 const TXRDY: u32 = 1 << 1;
 
 #[repr(C)]
-struct Serial {
+pub struct Serial {
     pub control: WO<u32>,
     mode: RW<u32>,
     interrupts: [u32;3],

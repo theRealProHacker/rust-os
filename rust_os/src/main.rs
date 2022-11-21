@@ -17,19 +17,19 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 
 extern "C" fn data_abort_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
-  println!("Data Abort");
+  serial::Serial::new().write(61);
   loop {}
 }
 
 extern "C" fn undef_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
-  println!("Undefined Instruction");
+  serial::Serial::new().write(61);
   loop {}
 }
 
 extern "C" fn swi_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
-  println!("Software Interrupt");
+  serial::Serial::new().write(61);
   loop {}
 }
 
@@ -64,13 +64,13 @@ fn raise_undef() {
 extern "C" fn _start() {
     println!("Starting up");
     memory_controller::remap();
-    // exceptions::init_sps();
     let exceptions = exceptions::ExceptionTable::new();
     unsafe {
       exceptions.data_abort_handler.write(data_abort_handler as u32);
       exceptions.undef_handler.write(undef_handler as u32);
       exceptions.swi_handler.write(swi_handler as u32);
     };
+    exceptions::init_sps();
     loop {
         let c: u8 = read();
         println!("You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c);
