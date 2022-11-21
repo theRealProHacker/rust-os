@@ -29,7 +29,13 @@ extern "C" fn undef_handler() -> ! {
 
 extern "C" fn swi_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
-  serial::Serial::new().write(b's');
+  unsafe{
+    asm!(
+      "str {r} [{addr}]",
+      r = in(reg) b'u',
+      addr = in(reg) 0xFFFFF214u32
+    );
+  }
   loop {}
 }
 
@@ -74,6 +80,6 @@ extern "C" fn _start() {
     loop {
         let c: u8 = read();
         println!("You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c);
-        raise_undef();
+        raise_swi();
     }
 }
