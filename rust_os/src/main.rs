@@ -6,7 +6,7 @@
 mod exceptions;
 mod memory_controller;
 mod serial;
-use core::{ptr::{write_volatile, read_volatile}, arch::asm};
+use core::{ptr::read_volatile, arch::asm};
 
 use serial::read;
 
@@ -64,6 +64,7 @@ fn raise_undef() {
 extern "C" fn _start() {
     println!("Starting up");
     memory_controller::remap();
+    exceptions::init_sps();
     let exceptions = exceptions::ExceptionTable::new();
     unsafe {
       exceptions.data_abort_handler.write(data_abort_handler as u32);
