@@ -72,6 +72,6 @@ extern "C" fn _start() {
     loop {
         let c: u8 = read();
         println!("You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c);
-        raise_swi();
+        raise_undef();
     }
 }
