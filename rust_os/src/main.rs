@@ -15,6 +15,7 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
   loop {}
 }
 
+// Diese funktionieren leider nicht.
 extern "C" fn data_abort_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
   serial::Serial::new().write(b'd');

@@ -11,7 +11,7 @@ build:
 	cd rust_os && export PATH="$(ARM_TOOLS):$(CARGO_DIR):$$PATH" && cargo build
 
 run:
-	cd rust_os && export LD_LIBRARY_PATH=$(LINKER_PATH) && $(QEMU) -serial stdio -kernel $(BINARY)
+	cd rust_os && export LD_LIBRARY_PATH=$(LINKER_PATH) && $(QEMU) -kernel $(BINARY)
 
 clean:
 	cd rust_os && $(CARGO) clean

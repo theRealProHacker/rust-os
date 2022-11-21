@@ -77,29 +77,8 @@ macro_rules! set_reg {
 pub fn init_sps () {
   // Zuerst gehen wir in einen Modus. Dann setzen wir den Stackpointer auf den oben gennanten
   unsafe {
-    // set_reg!(CPSR, SVC);
-    // asm!();
-    asm!(
-      "mrs     r0, CPSR",  //auslaesen vom status register
-        "bic     r0, r0, #0x1F", //set all mode bits to zero
-        "orr     r1, r0, #0x11", //ARM_MODE_FIQ
-        "msr     CPSR, r1", 
-        "mov     sp, #0x400", //set stack pointer for fiq mode
-        "orr     r1, r0, #0x12", //ARM_MODE_IRQ
-        "msr     CPSR, r12", 
-        "mov     sp, #0x800", //set stack pointer for irq mode
-        "orr     r1, r0, #0x13", //ARM_MODE_ABORT
-        "msr     CPSR, r1", 
-        "mov     sp, #0xC00", //set stack pointer for abort mode
-        "orr     r1, r0, #0x17", //ARM_MODE_supervisor
-        "msr     CPSR, r1", 
-        "mov     sp, #0x1000", //set stack pointer for supervisor mode
-        "orr     r1, r0, #0x1B", //ARM_MODE_UNDEFINED
-        "msr     CPSR, r1", 
-        "mov     sp, #0x1400", //set stack pointer for undefined mode
-        "orr     r1, r0, #0x1F", //ARM_MODE_SYS
-        "msr     CPSR, r1", 
-        "mov     sp, #0x4000", //set stack pointer for system/user mode
-    ); 
+    set_reg!(CPSR, SVC);
+    asm!("mov sp, {sp}", sp = in(reg) 0x002100FFu32);
+    // usw. Zeit hat leider gefehlt 
   };
 }
