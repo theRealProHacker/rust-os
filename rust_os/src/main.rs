@@ -31,7 +31,7 @@ extern "C" fn undef_handler() -> ! {
 extern "C" fn swi_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
   unsafe {
-    write_volatile(&mut *(0xFFFFF214 as *mut _), b'u' as u32);
+    write_volatile(&mut *(0xFFFFF200 as *mut _), b'u' as u32);
     // asm!(
     //   "str {r}, [{addr}]",
     //   r = in(reg) b'u',
