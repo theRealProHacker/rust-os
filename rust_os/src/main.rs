@@ -78,7 +78,7 @@ extern "C" fn _start() {
       exceptions.undef_handler.write(undef_handler as u32);
       exceptions.swi_handler.write(swi_handler as u32);
     };
-    // exceptions::init_sps();
+    exceptions::init_sps();
     loop {
         let c: u8 = read();
         println!("You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c);

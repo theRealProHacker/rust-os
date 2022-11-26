@@ -47,38 +47,49 @@ impl ExceptionTable {
   // Jetzt kann man handler in die handler-Register reinschreiben
 }
 
-const USR: u32 = 0x10;
-const FIQ: u32 = 0x11;
-const IRQ: u32 = 0x12;
-const SVC: u32 = 0x13;
-const ABT: u32 = 0x17;
-const UND: u32 = 0x1B;
-const SYS: u32 = 0x1F;
 
-macro_rules! set_reg {
-  // Wir clearen und dann oren wir
-  ($reg:tt, $value: tt) => (
-    asm!(
-      "bic {set_reg}, {set_reg}, #0x1F",
-      concat!("orr ", stringify!($reg), ", {tmp_reg}"),
-      tmp_reg = in(reg) $value,
-      set_reg = out(reg) _,
-    )
-  )
-}
-
-/// | Modus | Stackpointer Adresse |
-/// |-------|----------------------|
-/// | svc (reset) | 0x0021 00FF |
-/// | und (undef. instr.) | 0x0021 01FF |
-/// | abt (abort) | 0x0021 02FF |
-/// | irq | 0x0021 03FF |
-/// | fiq | 0x0021 04FF |
 pub fn init_sps () {
   // Zuerst gehen wir in einen Modus. Dann setzen wir den Stackpointer auf den oben gennanten
+  /*
+    const USR: u32 = 0x10;
+    const FIQ: u32 = 0x11;
+    const IRQ: u32 = 0x12;
+    const SVC: u32 = 0x13;
+    const ABT: u32 = 0x17;
+    const UND: u32 = 0x1B;
+    const SYS: u32 = 0x1F;
+  
+  */
   unsafe {
-    set_reg!(CPSR, SVC);
-    asm!("mov sp, {sp}", sp = in(reg) 0x002100FFu32);
-    // usw. Zeit hat leider gefehlt 
+    asm!(
+      // Wir kopieren erst CPSR nach r1, um dann atomare Änderungen am CPSR ausführen zu können
+      "mrs {r1}, CPSR",
+      "mrs {backup}, CPSR", // backup
+      // Um nur die letzten 5 bits zu ändern, können wir zuerst die bits clearen (mit 1..100000 verunden)
+      // und danach mit dem Modus (0..010000 z.B.) verodern
+      // software interrupt
+      "bic {r1}, #0x1F",
+      "orr {r1}, #0x13",
+      "msr CPSR, {r1}",
+      // und jetzt können wir den Stackpointer in dem Modus setzen
+      "mov r13, {swi_sp}",
+      // undefined
+      "bic {r1}, #0x1F",
+      "orr {r1}, #0x1B",
+      "msr CPSR, {r1}",
+      "mov r13, {und_sp}",
+      // abort
+      "bic {r1}, #0x1F",
+      "orr {r1}, #0x17",
+      "msr CPSR, {r1}",
+      "mov r13, {abt_sp}",
+      // back to backup
+      "msr CPSR, {backup}",
+      r1 = out(reg) _,
+      backup = out(reg) _,
+      swi_sp = in (reg) 0x2100FFu32,
+      und_sp = in (reg) 0x2101FFu32,
+      abt_sp = in (reg) 0x2102FFu32,
+    )
   };
 }
