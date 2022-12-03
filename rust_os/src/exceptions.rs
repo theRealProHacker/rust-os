@@ -1,4 +1,5 @@
 #![allow(missing_fragment_specifier)]
+#![allow(dead_code)]
 use core::arch::asm;
 
 use volatile_register::WO;
@@ -47,7 +48,7 @@ impl ExceptionTable {
   // Jetzt kann man handler in die handler-Register reinschreiben
 }
 
-
+/// Initialises the mode stack pointers
 pub fn init_sps () {
   // Zuerst gehen wir in einen Modus. Dann setzen wir den Stackpointer auf den oben gennanten
   /*

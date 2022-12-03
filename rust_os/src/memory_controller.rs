@@ -6,6 +6,7 @@ use core::ptr::write_volatile;
 const MEMORY_CONTROLLER: u32 = 0xFFFFFF00;
 
 /// MC remap
+#[inline(always)]
 pub fn remap() {
     unsafe{
         // Wir setzen das erste Bit
