@@ -32,11 +32,6 @@ extern "C" fn swi_handler() -> ! {
   // Wir müssen nichts machen, da wir nie zurückspringen
   unsafe {
     write_volatile(&mut *(0xFFFFF21C as *mut _), b'u' as u32);
-    // asm!(
-    //   "str {r}, [{addr}]",
-    //   r = in(reg) b'u',
-    //   addr = in(reg) 0xFFFFF214u32,
-    // );
   }
   loop {}
 }
@@ -72,6 +67,7 @@ fn raise_undef() {
 extern "C" fn _start() {
     println!("Starting up");
     memory_controller::remap();
+    serial::Serial::new().init();
     let exceptions = exceptions::ExceptionTable::new();
     unsafe {
       exceptions.data_abort_handler.write(data_abort_handler as u32);

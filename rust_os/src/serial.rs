@@ -21,11 +21,11 @@ pub struct Serial {
 
 impl Serial {
     pub fn new() -> &'static mut Serial {
-        unsafe {(&mut *(DBGU as *mut Serial)).init()}
+        unsafe {&mut *(DBGU as *mut Serial)}
     }
 
     #[inline(always)]
-    fn init(&mut self) -> &mut Self {
+    pub fn init(&mut self) -> &mut Self {
         unsafe {
             self.control.write(RXEN & TXEN);
         }
