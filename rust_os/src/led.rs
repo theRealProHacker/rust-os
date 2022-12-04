@@ -1,17 +1,5 @@
-#![no_std]
-#![no_main]
-#![feature(core_intrinsics)]
-
-use core::arch::global_asm;
 use core::arch::asm;
 use volatile_register::WO;
-
-global_asm!(include_str!("start.S"));
-
-#[panic_handler]
-fn panic_handler(_: &core::panic::PanicInfo) -> ! {
-  loop {}
-}
 
 const PIOB: u32 = 0xfffff600;
 const YELLOW_LED: u32  = 1 << 27;
@@ -59,14 +47,3 @@ extern "C" fn yellow_on() {
     }
   }
 }
-
-// Printf Überlegung
-// Wir nehmen an, dass wir eine Funktion writeString haben, die auf die serielle Schnittstelle schreibt.
-// Es gibt eigentlich ein crate, das genau printf ohne libc implementiert. Die Frage ist, ob wir das einfach so,
-// aber natürlich mit Quellenangabe, benutzen dürfen.
-// Stattdessen gehe ich jetzt durch willcrichton.net (Link im README) durch.
-// Die Hauptidee ist LinkedLists zu benutzen, um sowohl das Format als auch die angegebenen Variablen zu speichern
-// printf soll ein Makro sein, damit es unbegrenzt viele Argumente verschiedenen Types annehmen kann.
-// fn printf(s: &str) {
-
-// }
