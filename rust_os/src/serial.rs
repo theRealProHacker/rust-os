@@ -10,7 +10,7 @@ const RXRDY: u32 = 1 << 0;
 const TXRDY: u32 = 1 << 1;
 
 #[repr(C)]
-struct Serial {
+pub struct Serial {
     pub control: WO<u32>,
     mode: RW<u32>,
     interrupts: [u32;3],
@@ -20,8 +20,12 @@ struct Serial {
 }
 
 impl Serial {
+    pub fn new() -> &'static mut Serial {
+        unsafe {&mut *(DBGU as *mut Serial)}
+    }
+
     #[inline(always)]
-    fn init(&mut self) -> &mut Self {
+    pub fn init(&mut self) -> &mut Self {
         unsafe {
             self.control.write(RXEN & TXEN);
         }
@@ -42,14 +46,14 @@ impl Serial {
 
     /// Liest einen char 
     #[inline(always)]
-    fn read(&self) -> u8 {
+    pub fn read(&self) -> u8 {
         while !self.rx_ready() {}
         self.receive.read() as u8
     }
     
     /// Schreibt einen char
     #[inline(always)]
-    fn write(&self, char: u8) {
+    pub fn write(&self, char: u8) {
         while !self.tx_ready() {}
         unsafe {
             self.transmit.write(char.into());
@@ -67,10 +71,6 @@ impl Write for Serial {
     }
 }
 
-fn get_serial() -> &'static mut Serial {
-    unsafe {(&mut *(DBGU as *mut Serial)).init()}
-}
-
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
@@ -84,9 +84,9 @@ macro_rules! print {
 
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
-    get_serial().write_fmt(args).unwrap();
+    Serial::new().write_fmt(args).unwrap();
 }
 
 pub fn read() -> u8 {
-    get_serial().read()
+    Serial::new().read()
 }
