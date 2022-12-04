@@ -1,5 +1,5 @@
 #![allow(missing_fragment_specifier)]
-#![allow(dead_code)]
+// #![allow(dead_code)]
 use core::arch::asm;
 
 use volatile_register::WO;
@@ -27,16 +27,22 @@ pub struct ExceptionTable {
 }
 
 impl ExceptionTable {
+  #[inline(always)]
   pub fn new() -> &'static mut Self {
-    unsafe {(&mut *(IVT as *mut Self)).init()}
+    unsafe {&mut *(IVT as *mut Self)}
   }
 
-  fn init(&mut self)->&mut Self{
+  #[inline(always)]
+  pub fn init(&mut self)->&mut Self{
     unsafe{
-      // Hier müssen wir in die Register den assembly code reinschreiben, der in den handler springt, der in den handler-Registern steht
+      // Hier müssen wir in die Register den assembly code reinschreiben, 
+      // der in den handler springt, der in den handler-Registern steht
       // https://armconverter.com/?code=ldr%20pc,%20%5Bpc,%20%230x14%5D
       // Wir haben little-endian und big-endian versucht, aber nur big hat funktioniert
       const ASM_AS_BYTES: u32 = 0xE59FF014;
+      // AT91_interrupts.pdf p.2
+      // https://armconverter.com/?code=ldr%20pc,%5Bpc,%23-0xF20%5D
+      self.irq.write(0xE51FFF20);
       self.undef.write(ASM_AS_BYTES);
       self.swi.write(ASM_AS_BYTES);
       // self.prefetch.write(asm_as_bytes); Not needed
@@ -49,6 +55,7 @@ impl ExceptionTable {
 }
 
 /// Initialises the mode stack pointers
+#[inline(always)]
 pub fn init_sps () {
   // Zuerst gehen wir in einen Modus. Dann setzen wir den Stackpointer auf den oben gennanten
   /*
@@ -65,25 +72,30 @@ pub fn init_sps () {
     asm!(
       // Wir kopieren erst CPSR nach r1, um dann atomare Änderungen am CPSR ausführen zu können
       "mrs {r1}, CPSR",
-      "mrs {backup}, CPSR", // backup
+      "mrs {backup}, CPSR",
       // Um nur die letzten 5 bits zu ändern, können wir zuerst die bits clearen (mit 1..100000 verunden)
-      // und danach mit dem Modus (0..010000 z.B.) verodern
+      // und danach mit dem Modus (z.B. 0..010000) verodern
       // software interrupt
       "bic {r1}, #0x1F",
       "orr {r1}, #0x13",
       "msr CPSR, {r1}",
       // und jetzt können wir den Stackpointer in dem Modus setzen
-      "mov r13, {swi_sp}",
+      "mov sp, {swi_sp}",
       // undefined
       "bic {r1}, #0x1F",
       "orr {r1}, #0x1B",
       "msr CPSR, {r1}",
-      "mov r13, {und_sp}",
+      "mov sp, {und_sp}",
       // abort
       "bic {r1}, #0x1F",
       "orr {r1}, #0x17",
       "msr CPSR, {r1}",
-      "mov r13, {abt_sp}",
+      "mov sp, {abt_sp}",
+      // irq
+      "bic {r1}, #0x1F",
+      "orr {r1}, #0x12",
+      "msr CPSR, {r1}",
+      "mov sp, {irq_sp}",
       // back to backup
       "msr CPSR, {backup}",
       r1 = out(reg) _,
@@ -91,6 +103,7 @@ pub fn init_sps () {
       swi_sp = in (reg) 0x2100FFu32,
       und_sp = in (reg) 0x2101FFu32,
       abt_sp = in (reg) 0x2102FFu32,
+      irq_sp = in (reg) 0x2103FFu32,
     )
   };
 }

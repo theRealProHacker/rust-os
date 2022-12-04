@@ -20,6 +20,7 @@ pub struct Serial {
 }
 
 impl Serial {
+    // p. 330
     #[inline(always)]
     pub fn new() -> &'static mut Serial {
         unsafe {&mut *(DBGU as *mut Serial)}

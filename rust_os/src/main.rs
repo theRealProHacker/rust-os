@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use crate::exceptions::ExceptionTable;
+
 mod exceptions;
 mod memory_controller;
 mod serial;
@@ -17,10 +19,12 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 #[link_section = ".init"]
 #[no_mangle]
 extern "C" fn _start() {
+  exceptions::init_sps();
+  ExceptionTable::new().init();
+  interrupts::AIC::new().init();
   serial::Serial::new().init();
   println!("Starting up");
   memory_controller::remap();
-  exceptions::init_sps();
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768);
   loop {
