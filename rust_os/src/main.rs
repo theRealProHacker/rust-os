@@ -83,4 +83,5 @@ pub extern "C" fn src1_handler(){
       CHAR = Some(dbgu.read() as char);
     }
   }
+  println!("Debug")
 }
