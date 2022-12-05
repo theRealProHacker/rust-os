@@ -37,6 +37,8 @@ extern "C" fn _start() {
   serial::Serial::new().init();
   println!("Starting up");
   memory_controller::remap();
+  println!("power");
+  power_management::enable_sys_clock();
   println!("exceptions");
   let ivt = exceptions::IVT::new().init();
   unsafe {
