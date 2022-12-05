@@ -32,7 +32,6 @@ impl Serial {
     pub fn init(&mut self) -> &mut Self {
         unsafe {
             self.control.write(RXEN & TXEN);
-            self.int_enable.write(COMMRX)
         }
         self
     }

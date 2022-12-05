@@ -48,6 +48,8 @@ extern "C" fn _start() {
   interrupts::AIC::new().init().set_handler(
     1, src1_handler
   );
+  println!("debug interrupt enable");
+  unsafe{serial::Serial::new().int_enable.write(serial::COMMRX)}
   println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
