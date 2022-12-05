@@ -37,8 +37,6 @@ extern "C" fn _start() {
   serial::Serial::new().init();
   println!("Starting up");
   memory_controller::remap();
-  println!("power");
-  power_management::enable_sys_clock();
   println!("exceptions");
   let ivt = exceptions::IVT::new().init();
   unsafe {
@@ -46,11 +44,11 @@ extern "C" fn _start() {
     ivt.undef_handler.write(und_handler as u32);
     ivt.swi_handler.write(swi_handler as u32);
   }
-  // println!("power management");
-  // power_management::enable_sys_clock();
   println!("interrupts");
   interrupts::AIC::new().init()
     .set_handler(1, src1_handler);
+  println!("power management");
+  power_management::enable_sys_clock();
   println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
