@@ -34,18 +34,22 @@ extern "C" fn swi_handler() {
 #[no_mangle]
 extern "C" fn _start() {
   // own_asm::init_sps();
+  serial::Serial::new().init();
+  println!("Starting up");
   memory_controller::remap();
+  println!("exceptions");
   let ivt = exceptions::IVT::new().init();
   unsafe {
     ivt.data_abort_handler.write(dab_handler as u32);
     ivt.undef_handler.write(und_handler as u32);
     ivt.swi_handler.write(swi_handler as u32);
   }
+  println!("power management");
   power_management::enable_sys_clock();
+  println!("interrupts");
   interrupts::AIC::new().init()
     .set_handler(1, src1_handler);
-  serial::Serial::new().init();
-  println!("Starting up");
+  println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
   loop {
