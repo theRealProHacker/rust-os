@@ -45,8 +45,9 @@ extern "C" fn _start() {
     ivt.swi_handler.write(swi_handler as u32);
   }
   println!("interrupts");
-  interrupts::AIC::new().init()
-    .set_handler(1, src1_handler);
+  interrupts::AIC::new().init().set_handler(
+    1, src1_handler
+  );
   println!("power management");
   power_management::enable_sys_clock();
   println!("sys timer");
