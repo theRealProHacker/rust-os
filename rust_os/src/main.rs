@@ -34,7 +34,6 @@ extern "C" fn swi_handler() {
 #[no_mangle]
 extern "C" fn _start() {
   own_asm::init_sps();
-  power_management::PMC::new().enable_sys_clock();
   serial::Serial::new().init();
   println!("Starting up");
   memory_controller::remap();

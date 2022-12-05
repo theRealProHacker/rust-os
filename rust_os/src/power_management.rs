@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use volatile_register::{WO, RO};
 
 pub struct PMC {
