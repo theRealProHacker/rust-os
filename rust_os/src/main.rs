@@ -15,13 +15,33 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
   loop {}
 }
 
+extern "C" fn dab_handler() {
+  print!("Data abort");
+  loop{}
+}
+
+extern "C" fn und_handler() {
+  print!("Undefined instruction");
+  loop{}
+}
+
+extern "C" fn swi_handler() {
+  print!("Software interrupt");
+  loop{}
+}
+
 #[link_section = ".init"]
 #[no_mangle]
 extern "C" fn _start() {
-  own_asm::init_sps();
+  // own_asm::init_sps();
   memory_controller::remap();
+  let ivt = exceptions::IVT::new().init();
+  unsafe {
+    ivt.data_abort_handler.write(dab_handler as u32);
+    ivt.undef_handler.write(und_handler as u32);
+    ivt.swi_handler.write(swi_handler as u32);
+  }
   power_management::enable_sys_clock();
-  exceptions::IVT::new().init();
   interrupts::AIC::new().init()
     .set_handler(1, src1_handler);
   serial::Serial::new().init();
