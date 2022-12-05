@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![feature(naked_functions)]
 
 mod own_asm;
 mod exceptions;
@@ -69,6 +70,7 @@ extern "C" fn _start() {
 
 static mut CHAR: Option<char> = None;
 
+#[naked]
 pub extern "C" fn src1_trampolin() {
   trampolin!(4, src1_handler);
 }
