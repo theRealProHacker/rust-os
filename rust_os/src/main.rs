@@ -49,7 +49,7 @@ extern "C" fn _start() {
     1, src1_handler
   );
   println!("power management");
-  power_management::enable_sys_clock();
+  power_management::PMC::new().enable_sys_clock();
   println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
