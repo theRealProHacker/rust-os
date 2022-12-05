@@ -48,7 +48,7 @@ extern "C" fn _start() {
   }
   println!("interrupts");
   interrupts::AIC::new().init().set_handler(
-    1, src1_handler
+    1, src1_trampolin
   );
   println!("debug interrupt enable");
   unsafe{serial::Serial::new().int_enable.write(serial::COMMRX)}
@@ -64,6 +64,8 @@ extern "C" fn _start() {
         for _ in 1..20 {
           print!("{char}");
         }
+      } else {
+        print!("_")
       }
     }
   }
