@@ -33,10 +33,10 @@ extern "C" fn swi_handler() {
 #[link_section = ".init"]
 #[no_mangle]
 extern "C" fn _start() {
+  memory_controller::remap();
   own_asm::init_sps();
   serial::Serial::new().init();
   println!("Starting up");
-  memory_controller::remap();
   println!("exceptions");
   let ivt = exceptions::IVT::new().init();
   unsafe {

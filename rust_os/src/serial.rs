@@ -31,7 +31,7 @@ impl Serial {
     #[inline(always)]
     pub fn init(&mut self) -> &mut Self {
         unsafe {
-            self.control.write(RXEN & TXEN);
+            self.control.write(RXEN | TXEN);
         }
         self
     }
