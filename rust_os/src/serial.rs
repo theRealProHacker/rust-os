@@ -36,6 +36,11 @@ impl Serial {
         self
     }
 
+    #[inline(always)]
+    pub fn enable_interrupts(&mut self) {
+        unsafe{self.int_enable.write(COMMRX);}
+    }
+
     /// Receive ready?
     #[inline(always)]
     pub fn rx_ready(&self) -> bool {

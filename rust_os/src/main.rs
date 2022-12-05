@@ -37,7 +37,7 @@ extern "C" fn swi_handler() {
 extern "C" fn _start() {
   memory_controller::remap();
   own_asm::init_sps();
-  serial::Serial::new().init();
+  let dbgu = serial::Serial::new().init();
   println!("Starting up");
   println!("exceptions");
   let ivt = exceptions::IVT::new().init();
@@ -46,12 +46,13 @@ extern "C" fn _start() {
     ivt.undef_handler.write(und_handler as u32);
     ivt.swi_handler.write(swi_handler as u32);
   }
+  // interrupt setup in aic and devices
   println!("interrupts");
   interrupts::AIC::new().init().set_handler(
     1, src1_trampolin
   );
   println!("debug interrupt enable");
-  unsafe{serial::Serial::new().int_enable.write(serial::COMMRX)}
+  dbgu.enable_interrupts();
   println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
@@ -90,4 +91,5 @@ pub extern "C" fn src1_handler(){
       CHAR = Some(dbgu.read() as char);
     }
   }
+  interrupts::AIC::new().end_of_interrupt();
 }

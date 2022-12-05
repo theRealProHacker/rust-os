@@ -8,8 +8,10 @@ pub struct AIC {
     pub src_vctrs: [RW<u32>;32],
     pub ivr: RO<u32>,
     pub fvr: RO<u32>,
-    _unused: [u32;6], 
+    _unused0: [u32;6],
     pub enable: WO<u32>,
+    _unused1: [u32;3],
+    pub eoicr: WO<u32>,
 }
 
 impl AIC {
@@ -33,5 +35,10 @@ impl AIC {
     pub fn set_handler(&mut self, at: usize, handler: extern fn()) -> &mut Self {
         unsafe{self.src_vctrs[at].write(handler as u32);}
         self
+    }
+
+    #[inline(always)]
+    pub fn end_of_interrupt(&mut self) {
+        unsafe{self.eoicr.write(1)}
     }
 }
