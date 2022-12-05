@@ -33,7 +33,7 @@ extern "C" fn swi_handler() {
 #[link_section = ".init"]
 #[no_mangle]
 extern "C" fn _start() {
-  // own_asm::init_sps();
+  own_asm::init_sps();
   serial::Serial::new().init();
   println!("Starting up");
   memory_controller::remap();

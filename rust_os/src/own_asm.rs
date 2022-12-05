@@ -62,8 +62,8 @@ macro_rules! trampolin {
           asm!(
             concat!("sub r14, ", $lr_offset),
             "push  {{r0-r12, lr}}",
-            // "sub    sp, 0x40", 
-            // TODO: is below necessary and/or correct
+            "sub    sp, 0x40", 
+            // TODO: is above necessary and/or correct
             //make a bit of space on the stack for rust, since rust creates code like: "str r0, [pc, #4]" 
             // it expects the sp to be decremented before once. The 0x40 is a random guess and provides space for a few var$
           );
@@ -71,7 +71,7 @@ macro_rules! trampolin {
               $handler();
           }
           asm!(
-              // add    sp, 0x40
+              "add    sp, 0x40",
               "pop    {{r0-r12, pc}}",
           );
         }
