@@ -71,13 +71,13 @@ extern "C" fn _start() {
 
 static mut CHAR: Option<char> = None;
 
-#[naked]
+// #[naked]
 pub extern "C" fn src1_trampolin() {
   trampolin!(4, src1_handler);
 }
 
 #[inline(never)]
-#[no_mangle]
+// #[no_mangle]
 pub extern "C" fn src1_handler(){
   println!("Debug");
   let timer = sys_timer::SysTimer::new();

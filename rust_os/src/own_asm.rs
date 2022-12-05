@@ -56,7 +56,7 @@ pub fn init_sps () {
 // https://github.com/simon-auch/rust_GrandiOS/blob/master/GrandiOS/src/utils/exceptions/common_code.rs#L24
 // https://web.archive.org/web/20200619135321/http://infocenter.arm.com/help/topic/com.arm.doc.dui0801b/BABBJEBD.html
 #[macro_export]
-macro_rules! trampolin {
+macro_rules! naked_trampolin {
     ($lr_offset:expr, $handler:expr) => (
         unsafe {
           asm!(
@@ -70,6 +70,26 @@ macro_rules! trampolin {
             "add    sp, 0x40",
             "pop    {{r0-r12, pc}}",
             options(noreturn),
+          );
+        }
+    );
+}
+#[macro_export]
+macro_rules! trampolin {
+    ($lr_offset:expr, $handler:ident) => (
+        unsafe {
+          asm!(
+            concat!("sub r14, ", $lr_offset),
+            "push  {{r0-r12, lr}}",
+            "sub    sp, 0x40", 
+          );
+            // TODO: is above necessary and/or correct
+            // make a bit of space on the stack for rust, since rust creates code like: "str r0, [pc, #4]" 
+            // it expects the sp to be decremented before once. The 0x40 is a random guess and provides space for a few var$
+          $handler();
+          asm!(
+            "add    sp, 0x40",
+            "pop    {{r0-r12, pc}}",
           );
         }
     );
