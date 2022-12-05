@@ -24,6 +24,6 @@ impl PMC {
     }
     #[inline(always)]
     pub fn enable_sys_clock(&mut self) {
-        unsafe{self.scer.write(1)}
+        unsafe{self.scer.write(1)};
     }
 }
