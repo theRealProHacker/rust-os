@@ -73,6 +73,7 @@ static mut CHAR: Option<char> = None;
 
 // #[naked]
 pub extern "C" fn src1_trampolin() {
+  println!("Debug");
   trampolin!(4, src1_handler);
 }
 
