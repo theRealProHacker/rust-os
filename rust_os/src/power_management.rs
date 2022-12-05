@@ -2,7 +2,9 @@ use volatile_register::{WO, RO};
 
 pub struct PMC {
     // p. 276
-    pub sys_clock: [WO<u32>;3],
+    pub scer: WO<u32>,
+    pub scdr: WO<u32>,
+    pub scsr: RO<u32>,
     _reserved1: u32,
     _per_clock: [u32;3],
     _reserved2: u32,
@@ -22,6 +24,6 @@ impl PMC {
     }
     #[inline(always)]
     pub fn enable_sys_clock(&mut self) {
-        unsafe{self.sys_clock[0].write(1);}
+        unsafe{self.scer.write(1)}
     }
 }
