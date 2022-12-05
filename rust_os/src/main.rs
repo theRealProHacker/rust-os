@@ -75,6 +75,7 @@ pub extern "C" fn src1_trampolin() {
 
 #[inline(never)]
 pub extern "C" fn src1_handler(){
+  println!("Debug");
   let timer = sys_timer::SysTimer::new();
   let dbgu = serial::Serial::new();
   if timer.status.read() & 1 != 0 {
@@ -84,5 +85,4 @@ pub extern "C" fn src1_handler(){
       CHAR = Some(dbgu.read() as char);
     }
   }
-  println!("Debug")
 }
