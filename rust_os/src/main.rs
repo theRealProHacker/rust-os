@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(naked_functions)]
+#![feature(asm_const)]
 
 mod own_asm;
 mod exceptions;
@@ -76,6 +77,7 @@ pub extern "C" fn src1_trampolin() {
 }
 
 #[inline(never)]
+#[no_mangle]
 pub extern "C" fn src1_handler(){
   println!("Debug");
   let timer = sys_timer::SysTimer::new();
