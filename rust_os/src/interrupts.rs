@@ -1,10 +1,9 @@
 use volatile_register::{RO, RW, WO};
 
-
 const AIC_ADDR: u32 = 0xFFFFF000;
 
-
 pub struct AIC {
+    // p. 251
     pub src_modes: [RW<u32>;32],
     pub src_vctrs: [RW<u32>;32],
     pub ivr: RO<u32>,
@@ -28,5 +27,11 @@ impl AIC {
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
         unsafe {self.enable.write(1<<index)}
+    }
+
+    #[inline(always)]
+    pub fn set_handler(&mut self, at: usize, handler: extern fn()) -> &mut Self {
+        unsafe{self.src_vctrs[at].write(handler as u32);}
+        self
     }
 }

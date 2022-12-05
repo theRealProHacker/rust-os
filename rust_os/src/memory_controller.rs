@@ -2,7 +2,7 @@
 use core::ptr::write_volatile;
 
 
-// S. 128 v 701
+// p. 128
 const MEMORY_CONTROLLER: u32 = 0xFFFFFF00;
 
 /// MC remap

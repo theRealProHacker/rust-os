@@ -1,34 +1,61 @@
 #![no_std]
 #![no_main]
 
-use crate::exceptions::ExceptionTable;
-
+mod own_asm;
 mod exceptions;
 mod memory_controller;
 mod serial;
 mod interrupts;
 mod sys_timer;
 mod power_management;
+use core::arch::asm;
 
 #[panic_handler]
 fn panic_handler(_: &core::panic::PanicInfo) -> ! {
   loop {}
 }
 
-
 #[link_section = ".init"]
 #[no_mangle]
 extern "C" fn _start() {
-  exceptions::init_sps();
-  ExceptionTable::new().init();
-  interrupts::AIC::new().init();
+  own_asm::init_sps();
+  memory_controller::remap();
+  power_management::enable_sys_clock();
+  exceptions::IVT::new().init();
+  interrupts::AIC::new().init()
+    .set_handler(1, src1_handler);
   serial::Serial::new().init();
   println!("Starting up");
-  memory_controller::remap();
   let sys_timer = sys_timer::SysTimer::new().init();
-  sys_timer.set_interval(32768);
+  sys_timer.set_interval(32768); // 1 sec
   loop {
-      let c: u8 = serial::read();
-      println!("You typed {}, dec: {c}, hex {c:X}, pointer {:p}", c as char, &c);
+    unsafe {
+      // reads like "if there is some char in CHAR then (re)set CHAR to None and print char 20 times"
+      if let Some(char) = CHAR {
+        CHAR = None;
+        for _ in 1..20 {
+          print!("{char}");
+        }
+      }
+    }
+  }
+}
+
+static mut CHAR: Option<char> = None;
+
+pub extern "C" fn src1_trampolin() {
+  trampolin!(4, src1_handler);
+}
+
+#[inline(never)]
+pub extern "C" fn src1_handler(){
+  let timer = sys_timer::SysTimer::new();
+  let dbgu = serial::Serial::new();
+  if timer.status.read() & 1 != 0 {
+    println!("!");
+  } else if dbgu.status.read() & (serial::COMMRX) != 0 {
+    unsafe {
+      CHAR = Some(dbgu.read() as char);
+    }
   }
 }

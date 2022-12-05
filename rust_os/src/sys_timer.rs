@@ -2,15 +2,16 @@
 
 use volatile_register::{WO, RW, RO};
 
-const ST_ADDR: u32 = 0x0;
+const ST_ADDR: u32 = 0xFFFF_FD00;
 
 pub struct SysTimer {
-    ctrl: u32,
-    interval_mode: RW<u32>,
+    // p. 296
+    pub ctrl: u32,
+    pub interval_mode: RW<u32>,
     unused1: [u32;2],
-    status: RO<u32>,
-    enable: WO<u32>,
-    disable: WO<u32>,
+    pub status: RO<u32>,
+    pub enable: WO<u32>,
+    pub disable: WO<u32>,
 }
 
 impl SysTimer {
