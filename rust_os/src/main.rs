@@ -64,8 +64,6 @@ extern "C" fn _start() {
         for _ in 1..20 {
           print!("{char}");
         }
-      } else {
-        print!("_")
       }
     }
   }
