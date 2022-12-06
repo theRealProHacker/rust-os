@@ -11,6 +11,7 @@ mod interrupts;
 mod sys_timer;
 mod power_management;
 use core::arch::asm;
+use interrupts::SrcType;
 
 #[panic_handler]
 fn panic_handler(_: &core::panic::PanicInfo) -> ! {
@@ -32,6 +33,14 @@ extern "C" fn swi_handler() {
   loop{}
 }
 
+extern "C" fn default_handler() {
+  trampolin!(4, _default_handler);
+}
+
+fn _default_handler() {
+  print!("Default handler");
+}
+
 #[link_section = ".init"]
 #[no_mangle]
 extern "C" fn _start() {
@@ -48,11 +57,11 @@ extern "C" fn _start() {
   }
   // interrupt setup in aic and devices
   println!("interrupts");
-  interrupts::AIC::new().set_handler(
+  interrupts::AIC::new().init(default_handler).set_handler(
     1, 
     src1_trampolin, 
     7, 
-    interrupts::SrcType::LowLevelSens
+    SrcType::LowLevelSens
   );
   println!("debug interrupt enable");
   dbgu.enable_interrupts();
@@ -60,7 +69,6 @@ extern "C" fn _start() {
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
   println!("Application start");
-  unsafe {asm!("swi 0")}
   loop {
     unsafe {
       // reads like "if there is some char in CHAR then (re)set CHAR to None and print char 20 times"

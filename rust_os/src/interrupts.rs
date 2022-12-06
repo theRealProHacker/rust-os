@@ -31,10 +31,13 @@ impl AIC {
         unsafe {&mut *(AIC_ADDR as *mut AIC)}
     }
 
-    // #[inline(always)]
-    // pub fn init(&mut self) -> &mut Self {
-    //     self
-    // }
+    #[inline(always)]
+    pub fn init(&mut self, default_handler: extern fn()) -> &mut Self {
+        for i in 0..32 {
+            self.set_handler(i, default_handler, 0, SrcType::LowLevelSens);
+        }
+        self
+    }
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
