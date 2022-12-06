@@ -38,7 +38,7 @@ impl AIC {
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
-        unsafe {self.enable.write(self.imr.read() | 1<<index)}
+        unsafe {self.enable.write(self.imr.read() | (1<<index))}
     }
 
     /// Setzt den handler an [index] mit Priorität [prio] und Source Typ [src_type]
@@ -48,7 +48,7 @@ impl AIC {
     pub fn set_handler(&mut self, index: usize, handler: extern fn(), prio: u32, src_type: SrcType) -> &mut Self {
         unsafe{
             self.src_vctrs[index].write(handler as u32);
-            self.src_modes[index].write(prio | (src_type as u32)<<5);
+            self.src_modes[index].write(prio | ((src_type as u32)<<5));
         }
         self.enable_interrupt(index as u8);
         self
