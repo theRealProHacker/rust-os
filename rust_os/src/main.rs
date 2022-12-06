@@ -49,7 +49,7 @@ extern "C" fn _start() {
   // interrupt setup in aic and devices
   println!("interrupts");
   interrupts::AIC::new().set_handler(
-    1, src1_trampolin
+    1, src1_trampolin, 7, interrupts::SrcType::LowLevelSens
   );
   println!("debug interrupt enable");
   dbgu.enable_interrupts();

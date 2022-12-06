@@ -2,6 +2,14 @@ use volatile_register::{RO, RW, WO};
 
 const AIC_ADDR: u32 = 0xFFFFF000;
 
+#[allow(dead_code)]
+pub enum SrcType {
+    LowLevelSens,
+    NegativeEdgeTriggered,
+    HighLevelSens,
+    PositiveEdgeTriggered
+}
+
 pub struct AIC {
     // p. 251
     pub src_modes: [RW<u32>;32],
@@ -30,11 +38,15 @@ impl AIC {
         unsafe {self.enable.write(1<<index)}
     }
 
-    /// Setzt den handler an [index]
+    /// Setzt den handler an [index] mit Priorität [prio] und Source Typ [src_type]
     /// index muss zwischen 0 und 31 sein.
+    /// prio muss zwischen 0 und 7 sein
     #[inline(always)]
-    pub fn set_handler(&mut self, index: usize, handler: extern fn()) -> &mut Self {
-        unsafe{self.src_vctrs[index].write(handler as u32);}
+    pub fn set_handler(&mut self, index: usize, handler: extern fn(), prio: u32, src_type: SrcType) -> &mut Self {
+        unsafe{
+            self.src_vctrs[index].write(handler as u32);
+            self.src_modes[index].write(prio | (src_type as u32)<<5);
+        }
         self.enable_interrupt(index as u8);
         self
     }
