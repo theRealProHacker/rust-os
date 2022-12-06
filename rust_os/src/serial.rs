@@ -3,10 +3,10 @@ use volatile_register::{WO, RW, RO};
 
 // consts
 pub const DBGU_ADDR: u32 = 0xFFFFF200;
-pub const RXEN: u32 = 1 << 4;
-pub const TXEN: u32 = 1 << 6;
 pub const RXRDY: u32 = 1 << 0;
 pub const TXRDY: u32 = 1 << 1;
+pub const RXEN: u32 = 1 << 4;
+pub const TXEN: u32 = 1 << 6;
 pub const COMMRX: u32 = 1 << 31;
 
 #[repr(C)]

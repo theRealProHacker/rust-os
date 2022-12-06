@@ -16,7 +16,10 @@ pub struct AIC {
     pub src_vctrs: [RW<u32>;32],
     pub ivr: RO<u32>,
     pub fvr: RO<u32>,
-    _unused0: [u32;6],
+    _isr: RO<u32>,
+    _ipr: RO<u32>,
+    imr: RO<u32>,
+    _unused0: [u32;3],
     pub enable: WO<u32>,
     _unused1: [u32;3],
     pub eoicr: WO<u32>,
@@ -35,7 +38,7 @@ impl AIC {
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
-        unsafe {self.enable.write(1<<index)}
+        unsafe {self.enable.write(self.imr.read() | 1<<index)}
     }
 
     /// Setzt den handler an [index] mit Priorität [prio] und Source Typ [src_type]
