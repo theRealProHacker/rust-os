@@ -48,7 +48,7 @@ extern "C" fn _start() {
   }
   // interrupt setup in aic and devices
   println!("interrupts");
-  interrupts::AIC::new().init().set_handler(
+  interrupts::AIC::new().set_handler(
     1, src1_trampolin
   );
   println!("debug interrupt enable");

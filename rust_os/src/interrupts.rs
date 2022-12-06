@@ -20,20 +20,22 @@ impl AIC {
         unsafe {&mut *(AIC_ADDR as *mut AIC)}
     }
 
-    #[inline(always)]
-    pub fn init(&mut self) -> &mut Self {
-        self.enable_interrupt(1);
-        self
-    }
+    // #[inline(always)]
+    // pub fn init(&mut self) -> &mut Self {
+    //     self
+    // }
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
         unsafe {self.enable.write(1<<index)}
     }
 
+    /// Setzt den handler an [index]
+    /// index muss zwischen 0 und 31 sein.
     #[inline(always)]
-    pub fn set_handler(&mut self, at: usize, handler: extern fn()) -> &mut Self {
-        unsafe{self.src_vctrs[at].write(handler as u32);}
+    pub fn set_handler(&mut self, index: usize, handler: extern fn()) -> &mut Self {
+        unsafe{self.src_vctrs[index].write(handler as u32);}
+        self.enable_interrupt(index as u8);
         self
     }
 

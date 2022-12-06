@@ -8,8 +8,9 @@ pub struct SysTimer {
     pub interval_mode: RW<u32>,
     _unused: [u32;2],
     pub status: RO<u32>,
-    pub enable: WO<u32>,
-    pub disable: WO<u32>,
+    pub int_enable: WO<u32>,
+    pub int_disable: WO<u32>,
+    pub int_mask: RO<u32>,
 }
 
 impl SysTimer {
@@ -23,7 +24,7 @@ impl SysTimer {
 
     #[inline(always)]
     pub fn init(&mut self) -> &mut Self {
-        unsafe {self.enable.write(1);}
+        unsafe {self.int_enable.write(self.int_mask.read() | 1);}
         self
     }
 

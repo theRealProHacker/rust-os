@@ -38,7 +38,7 @@ impl Serial {
 
     #[inline(always)]
     pub fn enable_interrupts(&mut self) {
-        unsafe{self.int_enable.write(COMMRX);}
+        unsafe{self.int_enable.write(self.int_mask.read() | COMMRX);}
     }
 
     /// Receive ready?
