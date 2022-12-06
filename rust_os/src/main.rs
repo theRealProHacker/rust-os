@@ -60,6 +60,7 @@ extern "C" fn _start() {
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
   println!("Application start");
+  unsafe {asm!("swi 0")}
   loop {
     unsafe {
       // reads like "if there is some char in CHAR then (re)set CHAR to None and print char 20 times"
