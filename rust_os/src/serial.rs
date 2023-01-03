@@ -38,7 +38,7 @@ impl Serial {
 
     #[inline(always)]
     pub fn enable_interrupts(&mut self) {
-        unsafe{self.int_enable.write(self.int_mask.read() | RXRDY);}
+        unsafe{self.int_enable.write(RXRDY);}
     }
 
     /// Receive ready?
@@ -96,7 +96,7 @@ pub fn _print(args: core::fmt::Arguments) {
     Serial::new().write_fmt(args).unwrap();
 }
 
-// Synchronous read
-// pub fn read() -> u8 {
-//     Serial::new().read()
-// }
+/// Synchronous read
+pub fn read() -> u8 {
+    Serial::new().read()
+}

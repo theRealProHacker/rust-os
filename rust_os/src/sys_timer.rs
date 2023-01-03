@@ -24,7 +24,7 @@ impl SysTimer {
 
     #[inline(always)]
     pub fn init(&mut self) -> &mut Self {
-        unsafe {self.int_enable.write(self.int_mask.read() | 1);}
+        unsafe {self.int_enable.write(1);}
         self
     }
 

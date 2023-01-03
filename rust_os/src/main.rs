@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(naked_functions)]
-#![feature(asm_const)]
+#![feature(const_mut_refs)]
 
 mod own_asm;
 mod exceptions;
@@ -12,6 +12,8 @@ mod sys_timer;
 mod power_management;
 use core::arch::asm;
 use interrupts::SrcType;
+
+use crate::serial::read;
 
 #[panic_handler]
 fn panic_handler(_: &core::panic::PanicInfo) -> ! {
@@ -30,7 +32,11 @@ extern "C" fn und_handler() {
 
 extern "C" fn swi_handler() {
   print!("Software interrupt");
-  loop{}
+  unsafe{asm!(
+    "sub lr, 4",
+    "mov pc, lr",
+    options(noreturn)
+  )}
 }
 
 extern "C" fn default_handler() {
@@ -68,6 +74,12 @@ extern "C" fn _start() {
   println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
+  let c = read(); 
+  if c == b's' {
+    unsafe {
+      asm!("swi 0")
+    }
+  }
   println!("Application start");
   loop {
     unsafe {
@@ -84,14 +96,12 @@ extern "C" fn _start() {
 
 static mut CHAR: Option<char> = None;
 
-// #[naked]
 pub extern "C" fn src1_trampolin() {
   println!("Debug");
   trampolin!(4, src1_handler);
 }
 
 #[inline(never)]
-// #[no_mangle]
 pub extern "C" fn src1_handler(){
   println!("Debug");
   let timer = sys_timer::SysTimer::new();
