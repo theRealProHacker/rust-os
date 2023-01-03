@@ -31,12 +31,11 @@ extern "C" fn und_handler() {
 }
 
 extern "C" fn swi_handler() {
+  trampolin!(8, _swi_handler);
+}
+
+fn _swi_handler() {
   print!("Software interrupt");
-  unsafe{asm!(
-    "sub lr, 8",
-    "mov pc, lr",
-    options(noreturn)
-  )}
 }
 
 extern "C" fn default_handler() {
