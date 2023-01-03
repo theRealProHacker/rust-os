@@ -18,7 +18,7 @@ pub struct AIC {
     pub fvr: RO<u32>,
     _isr: RO<u32>,
     _ipr: RO<u32>,
-    imr: RO<u32>,
+    _imr: RO<u32>,
     _unused0: [u32;3],
     pub enable: WO<u32>,
     _unused1: [u32;3],
@@ -33,15 +33,15 @@ impl AIC {
 
     #[inline(always)]
     pub fn init(&mut self, default_handler: extern fn()) -> &mut Self {
-        for i in 0..32 {
-            self.set_handler(i, default_handler, 0, SrcType::LowLevelSens);
+        for index in 0..32 {
+            self.set_handler(index, default_handler, 0, SrcType::LowLevelSens);
         }
         self
     }
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
-        unsafe {self.enable.write(self.imr.read() | (1<<index))}
+        unsafe {self.enable.write(1<<index)}
     }
 
     /// Setzt den handler an [index] mit Priorität [prio] und Source Typ [src_type]
@@ -51,7 +51,8 @@ impl AIC {
     pub fn set_handler(&mut self, index: usize, handler: extern fn(), prio: u32, src_type: SrcType) -> &mut Self {
         unsafe{
             self.src_vctrs[index].write(handler as u32);
-            self.src_modes[index].write(prio | ((src_type as u32)<<5));
+            // self.src_modes[index].write(prio | ((src_type as u32)<<5));
+            self.src_modes[index].write(0);
         }
         self.enable_interrupt(index as u8);
         self
