@@ -33,7 +33,7 @@ extern "C" fn und_handler() {
 extern "C" fn swi_handler() {
   print!("Software interrupt");
   unsafe{asm!(
-    "sub lr, 4",
+    "sub lr, 8",
     "mov pc, lr",
     options(noreturn)
   )}
