@@ -33,9 +33,9 @@ impl AIC {
 
     #[inline(always)]
     pub fn init(&mut self, default_handler: extern fn()) -> &mut Self {
-        for index in 0..32 {
-            self.set_handler(index, default_handler, 0, SrcType::LowLevelSens);
-        }
+        // for index in 0..31 {
+        //     self.set_handler(index, default_handler, 0, SrcType::LowLevelSens);
+        // }
         self
     }
 
