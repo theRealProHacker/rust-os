@@ -31,7 +31,7 @@ extern "C" fn und_handler() {
 }
 
 extern "C" fn swi_handler() {
-  trampolin!(8, _swi_handler);
+  trampolin!(0, _swi_handler);
 }
 
 fn _swi_handler() {

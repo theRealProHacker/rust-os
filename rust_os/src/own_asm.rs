@@ -11,7 +11,6 @@ pub fn init_sps () {
     const ABT: u32 = 0x17;
     const UND: u32 = 0x1B;
     const SYS: u32 = 0x1F;
-
   */
   unsafe {
     asm!(
