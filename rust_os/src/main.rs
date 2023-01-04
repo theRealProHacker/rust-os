@@ -2,6 +2,7 @@
 #![no_main]
 #![feature(naked_functions)]
 #![feature(const_mut_refs)]
+#![feature(asm_const)]
 
 mod own_asm;
 mod exceptions;
@@ -21,12 +22,12 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 }
 
 extern "C" fn dab_handler() {
-  print!("Data abort");
+  print!("Data abort\n");
   loop{}
 }
 
 extern "C" fn und_handler() {
-  print!("Undefined instruction");
+  print!("Undefined instruction\n");
   loop{}
 }
 
@@ -35,15 +36,15 @@ extern "C" fn swi_handler() {
 }
 
 fn _swi_handler() {
-  print!("Software interrupt");
+  print!("Software interrupt\n");
 }
 
 extern "C" fn default_handler() {
-  trampolin!(4, _default_handler);
+  trampolin!(0, _default_handler);
 }
 
 fn _default_handler() {
-  print!("Default handler");
+  print!("Default handler\n");
 }
 
 #[link_section = ".init"]

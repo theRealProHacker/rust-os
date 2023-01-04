@@ -1,3 +1,4 @@
+use core::arch::asm;
 use volatile_register::{RO, RW, WO};
 
 const AIC_ADDR: u32 = 0xFFFFF000;
@@ -41,7 +42,16 @@ impl AIC {
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
-        unsafe {self.enable.write(1<<index)}
+        unsafe {
+            asm!(
+                "MRS {r1}, CPSR",
+                "BIC {r1}, {seventh_bit}",
+                "MSR CPSR, {r1}",
+                r1 = out(reg) _,
+                seventh_bit = const 1 << 7 as u32
+            );
+            self.enable.write(1<<index);
+        }
     }
 
     /// Setzt den handler an [index] mit Priorität [prio] und Source Typ [src_type]
