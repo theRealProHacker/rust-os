@@ -16,7 +16,7 @@ run:
 debug:
 	@echo gdb rust_os/$(BINARY)
 	@echo target remote localhost:1234
-	cd rust_os && export LD_LIBRARY_PATH=$(LINKER_PATH) && $(QEMU) -s -S -kernel $(BINARY)
+	cd rust_os && export LD_LIBRARY_PATH=$(LINKER_PATH) && $(QEMU) -s -kernel $(BINARY)
 
 clean:
 	cd rust_os && $(CARGO) clean
