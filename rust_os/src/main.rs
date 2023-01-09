@@ -25,9 +25,12 @@ extern "C" fn dab_handler() {
   let a: u32;
   get_reg!(a=pc);
   let content = unsafe {
-    read_volatile((a-8) as *const [u8;64])
+    read_volatile((a-8) as *const [u32;16])
   };
-  print!("Data abort at {a} with context {:?} \n", content);
+  println!("Data abort at {a} with context:");
+  for x in content {
+    print!("{:X}", x)
+  }
   loop{}
 }
 
