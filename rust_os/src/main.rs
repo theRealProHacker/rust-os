@@ -28,8 +28,8 @@ extern "C" fn dab_handler() {
     read_volatile((a-8) as *const [u32;16])
   };
   println!("Data abort at {a} with context:");
-  for x in content {
-    print!("{x:X}, ");
+  for i in 0..16 {
+    print!("{:x}, ", content[i]);
   }
   loop{}
 }
