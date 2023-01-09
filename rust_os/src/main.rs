@@ -11,7 +11,7 @@ mod serial;
 mod interrupts;
 mod sys_timer;
 mod power_management;
-use core::arch::asm;
+use core::{arch::asm, ptr::read_volatile};
 use interrupts::SrcType;
 
 use crate::serial::read;
@@ -22,7 +22,12 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 }
 
 extern "C" fn dab_handler() {
-  print!("Data abort\n");
+  let a: u32;
+  get_reg!(a=pc);
+  let content = unsafe {
+    read_volatile((a-8) as *const [u8;64])
+  };
+  print!("Data abort at {a} with context {:?} \n", content);
   loop{}
 }
 
@@ -37,14 +42,6 @@ extern "C" fn swi_handler() {
 
 fn _swi_handler() {
   print!("Software interrupt\n");
-}
-
-extern "C" fn default_handler() {
-  trampolin!(0, _default_handler);
-}
-
-fn _default_handler() {
-  print!("Default handler\n");
 }
 
 #[link_section = ".init"]
@@ -63,17 +60,17 @@ extern "C" fn _start() {
   }
   // interrupt setup in aic and devices
   println!("interrupts");
-  interrupts::AIC::new().init(default_handler).set_handler(
+  interrupts::AIC::new().set_handler(
     1, 
-    src1_trampolin, 
-    7, 
+    src1_handler, 
+    0, 
     SrcType::LowLevelSens
   );
   println!("debug interrupt enable");
   dbgu.enable_interrupts();
   println!("sys timer");
-  // let sys_timer = sys_timer::SysTimer::new().init();
-  // sys_timer.set_interval(32768); // 1 sec
+  let sys_timer = sys_timer::SysTimer::new().init();
+  sys_timer.set_interval(32768); // 1 sec
   let c = read(); 
   if c == b's' {
     unsafe {
@@ -96,13 +93,13 @@ extern "C" fn _start() {
 
 static mut CHAR: Option<char> = None;
 
-pub extern "C" fn src1_trampolin() {
+pub extern "C" fn src1_handler() {
   println!("Debug");
-  trampolin!(4, src1_handler);
+  trampolin!(0, _src1_handler);
 }
 
 #[inline(never)]
-pub extern "C" fn src1_handler(){
+fn _src1_handler(){
   println!("Debug");
   let timer = sys_timer::SysTimer::new();
   let dbgu = serial::Serial::new();

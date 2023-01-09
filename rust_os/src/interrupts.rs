@@ -32,13 +32,10 @@ impl AIC {
         unsafe {&mut *(AIC_ADDR as *mut AIC)}
     }
 
-    #[inline(always)]
-    pub fn init(&mut self, default_handler: extern fn()) -> &mut Self {
-        // for index in 0..31 {
-        //     self.set_handler(index, default_handler, 0, SrcType::LowLevelSens);
-        // }
-        self
-    }
+    // #[inline(always)]
+    // pub fn init(&mut self) -> &mut Self {
+    //     self
+    // }
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
@@ -61,8 +58,7 @@ impl AIC {
     pub fn set_handler(&mut self, index: usize, handler: extern fn(), prio: u32, src_type: SrcType) -> &mut Self {
         unsafe{
             self.src_vctrs[index].write(handler as u32);
-            // self.src_modes[index].write(prio | ((src_type as u32)<<5));
-            self.src_modes[index].write(0);
+            self.src_modes[index].write(prio | ((src_type as u32)<<5));
         }
         self.enable_interrupt(index as u8);
         self

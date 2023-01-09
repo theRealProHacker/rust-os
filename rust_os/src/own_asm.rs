@@ -1,5 +1,17 @@
 use core::arch::asm;
 
+#[macro_export]
+macro_rules! get_reg {
+    ($var:ident=$reg:ident) => (
+        unsafe {
+          asm!(
+            concat!("mov {reg}, ", stringify!($reg)),
+            reg = out(reg) $var,
+          );
+        }
+    );
+}
+
 /// Initialises the mode stack pointers
 #[inline(always)]
 pub fn init_sps () {
