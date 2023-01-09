@@ -99,7 +99,7 @@ pub extern "C" fn src1_handler() {
 }
 
 #[inline(never)]
-fn _src1_handler(){
+extern "C" fn _src1_handler(){
   println!("Debug");
   let timer = sys_timer::SysTimer::new();
   let dbgu = serial::Serial::new();
