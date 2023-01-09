@@ -13,5 +13,9 @@ build:
 run:
 	cd rust_os && export LD_LIBRARY_PATH=$(LINKER_PATH) && $(QEMU) -kernel $(BINARY)
 
+debug:
+	cd rust_os && export LD_LIBRARY_PATH=$(LINKER_PATH) && $(QEMU) -s -S -kernel $(BINARY)
+	@echo gdb /rust_os/$(BINARY)
+
 clean:
 	cd rust_os && $(CARGO) clean
