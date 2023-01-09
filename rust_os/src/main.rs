@@ -71,12 +71,12 @@ extern "C" fn _start() {
   println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768); // 1 sec
-  let c = read(); 
-  if c == b's' {
-    unsafe {
-      asm!("swi 0")
-    }
-  }
+  // let c = read(); 
+  // if c == b's' {
+  //   unsafe {
+  //     asm!("swi 0")
+  //   }
+  // }
   println!("Application start");
   loop {
     unsafe {
@@ -93,9 +93,9 @@ extern "C" fn _start() {
 
 static mut CHAR: Option<char> = None;
 
-pub extern "C" fn src1_handler() {
+extern "C" fn src1_handler() {
   println!("Debug");
-  trampolin!(0, _src1_handler);
+  // trampolin!(0, _src1_handler);
 }
 
 #[inline(never)]
