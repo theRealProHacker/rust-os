@@ -29,7 +29,7 @@ extern "C" fn dab_handler() {
   };
   println!("Data abort at {a} with context:");
   for x in content {
-    print!("{:X}", x)
+    print!("{:X}", x);
   }
   loop{}
 }
