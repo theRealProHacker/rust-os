@@ -23,7 +23,7 @@ fn panic_handler(_: &core::panic::PanicInfo) -> ! {
 
 extern "C" fn dab_handler() {
   let a: u32;
-  get_reg!(a=pc);
+  get_reg!(a=lr);
   let content = unsafe {
     read_volatile((a-8) as *const [u32;16])
   };
