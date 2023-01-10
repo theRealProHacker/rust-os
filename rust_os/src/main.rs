@@ -14,14 +14,12 @@ mod power_management;
 use core::{arch::asm, ptr::read_volatile};
 use interrupts::SrcType;
 
-use crate::serial::read;
-
 #[panic_handler]
 fn panic_handler(_: &core::panic::PanicInfo) -> ! {
   loop {}
 }
 
-extern "C" fn dab_handler() {
+extern "aapcs" fn dab_handler() {
   let a: u32;
   get_reg!(a=lr);
   let content = unsafe {
@@ -31,12 +29,12 @@ extern "C" fn dab_handler() {
   loop{}
 }
 
-extern "C" fn und_handler() {
+extern "aapcs" fn und_handler() {
   print!("Undefined instruction\n");
   loop{}
 }
 
-extern "C" fn swi_handler() {
+extern "aapcs" fn swi_handler() {
   trampolin!(0, _swi_handler);
 }
 
@@ -93,14 +91,12 @@ extern "C" fn _start() {
 
 static mut CHAR: Option<char> = None;
 
-extern "C" fn src1_handler() {
-  println!("Debug");
-  // trampolin!(0, _src1_handler);
+extern "aapcs" fn src1_handler() {
+  trampolin!(0, _src1_handler);
 }
 
 #[inline(never)]
-extern "C" fn _src1_handler(){
-  println!("Debug");
+extern "aapcs" fn _src1_handler(){
   let timer = sys_timer::SysTimer::new();
   let dbgu = serial::Serial::new();
   if timer.status.read() & 1 != 0 {
