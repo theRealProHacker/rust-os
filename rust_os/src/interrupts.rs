@@ -55,10 +55,10 @@ impl AIC {
     /// index muss zwischen 0 und 31 sein.
     /// prio muss zwischen 0 und 7 sein
     #[inline(always)]
-    pub fn set_handler(&mut self, index: usize, handler: extern "aapcs" fn(), prio: u32, src_type: SrcType) -> &mut Self {
+    pub fn set_handler(&mut self, index: usize, handler: u32, prio: u32, src_type: SrcType) -> &mut Self {
         unsafe{
-            self.src_vctrs[index].write(handler as u32);
             self.src_modes[index].write(prio | ((src_type as u32)<<5));
+            self.src_vctrs[index].write(handler);
         }
         self.enable_interrupt(index as u8);
         self

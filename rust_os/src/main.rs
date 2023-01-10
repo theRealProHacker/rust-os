@@ -60,7 +60,7 @@ extern "C" fn _start() {
   println!("interrupts");
   interrupts::AIC::new().set_handler(
     1, 
-    src1_handler, 
+    src1_handler as u32, 
     0, 
     SrcType::LowLevelSens
   );
