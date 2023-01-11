@@ -85,6 +85,7 @@ extern "C" fn _start() {
           print!("{char}");
         }
       }
+      println!("No char")
     }
   }
 }
