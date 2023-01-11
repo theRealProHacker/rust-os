@@ -106,7 +106,6 @@ extern "aapcs" fn src1_handler() {
 
 #[inline(never)]
 extern "aapcs" fn _src1_handler(){
-  println!("Debug interrupt print");
   let timer = sys_timer::SysTimer::new();
   let dbgu = serial::Serial::new();
   if timer.status.read() & 1 != 0 {
