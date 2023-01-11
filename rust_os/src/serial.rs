@@ -95,8 +95,3 @@ macro_rules! print {
 pub fn _print(args: core::fmt::Arguments) {
     Serial::new().write_fmt(args).unwrap();
 }
-
-/// Synchronous read
-pub fn read() -> u8 {
-    Serial::new().read()
-}

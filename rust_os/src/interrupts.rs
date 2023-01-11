@@ -39,14 +39,8 @@ impl AIC {
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
+        super::own_asm::demask_interrupts();
         unsafe {
-            asm!(
-                "MRS {r1}, CPSR",
-                "BIC {r1}, {seventh_bit}",
-                "MSR CPSR, {r1}",
-                r1 = out(reg) _,
-                seventh_bit = const 1 << 7 as u32
-            );
             self.enable.write(1<<index);
         }
     }
