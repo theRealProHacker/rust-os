@@ -85,6 +85,9 @@ extern "C" fn _start() {
           print!("{char}");
         }
       }
+      for _ in 1..100000 {
+        asm!("nop");
+      }
       println!("No char")
     }
   }
