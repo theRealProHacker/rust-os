@@ -30,7 +30,12 @@ extern "aapcs" fn dab_handler() {
 }
 
 extern "aapcs" fn und_handler() {
-  print!("Undefined instruction\n");
+  let a: u32;
+  get_reg!(a=lr);
+  let content = unsafe {
+    read_volatile((a-8) as *const [u32;16])
+  };
+  println!("Undefined Instruction at {a} with context: {content:?}");
   loop{}
 }
 
