@@ -101,7 +101,7 @@ extern "aapcs" fn src1_handler() {
   let dbgu = serial::Serial::new();
   if timer.status.read() & 1 != 0 {
     println!("!");
-  } else if dbgu.status.read() & (serial::COMMRX) != 0 {
+  } else if dbgu.status.read() & (serial::RXRDY) != 0 {
     println!("dbgu read");
     let char = dbgu.read() as char;
     println!("0");
