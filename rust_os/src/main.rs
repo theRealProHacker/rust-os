@@ -83,12 +83,9 @@ extern "C" fn _start() {
   // }
   println!("Application start");
   loop {
-    for _ in 1..100000 {
-      unsafe {
-        asm!("nop");
-      }
+    unsafe {
+      asm!("nop");
     }
-    println!("No char");
   }
 }
 
@@ -121,4 +118,5 @@ extern "aapcs" fn src1_handler() {
   }
   interrupts::AIC::new().end_of_interrupt();
   demask_interrupts();
+  loop {}
 }
