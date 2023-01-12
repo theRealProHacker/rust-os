@@ -17,6 +17,7 @@ use own_asm::demask_interrupts;
 
 #[panic_handler]
 fn panic_handler(_: &core::panic::PanicInfo) -> ! {
+  println!("\npanic");
   loop {}
 }
 
