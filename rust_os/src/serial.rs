@@ -7,13 +7,12 @@ pub const RXRDY: u32 = 1 << 0;
 pub const TXRDY: u32 = 1 << 1;
 pub const RXEN: u32 = 1 << 4;
 pub const TXEN: u32 = 1 << 6;
-pub const COMMRX: u32 = 1 << 31;
 
 #[repr(C)]
 pub struct Serial {
     // p. 330
     pub control: WO<u32>,
-    mode: RW<u32>,
+    _mode: RW<u32>,
     pub int_enable: WO<u32>,
     pub int_disable: WO<u32>,
     pub int_mask: RO<u32>,

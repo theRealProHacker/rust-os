@@ -16,10 +16,10 @@ macro_rules! get_reg {
 pub fn demask_interrupts() {
   unsafe{
     asm!(
-    "MRS {r1}, CPSR",
-    "BIC {r1}, {seventh_bit}",
-    "MSR CPSR, {r1}",
-    r1 = out(reg) _,
+    "MRS {reg}, CPSR",
+    "BIC {reg}, {seventh_bit}",
+    "MSR CPSR, {reg}",
+    reg = out(reg) _,
     seventh_bit = const 1 << 7 as u32
     );
   }

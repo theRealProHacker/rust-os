@@ -75,12 +75,6 @@ extern "C" fn _start() {
   println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
   sys_timer.set_interval(32768/2); // 1 sec
-  // let c = read(); 
-  // if c == b's' {
-  //   unsafe {
-  //     asm!("swi 0")
-  //   }
-  // }
   println!("Application start");
   loop {
     unsafe {
@@ -89,17 +83,10 @@ extern "C" fn _start() {
   }
 }
 
-// static mut CHAR: Option<char> = None;
-
 extern "aapcs" fn src1_handler() {
-//   trampolin!(0, _src1_handler);
-// }
-
-// #[inline(never)]
-// extern "aapcs" fn _src1_handler(){
   let timer = sys_timer::SysTimer::new();
   let dbgu = serial::Serial::new();
-  if timer.status.read() & 1 != 0 {
+  if timer.status.read() == 1 {
     println!("!");
   } else if dbgu.status.read() & (serial::RXRDY) != 0 {
     let char = dbgu.read() as char;

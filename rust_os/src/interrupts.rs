@@ -16,9 +16,9 @@ pub struct AIC {
     pub src_vctrs: [RW<u32>;32],
     pub ivr: RO<u32>,
     pub fvr: RO<u32>,
-    _isr: RO<u32>,
-    _ipr: RO<u32>,
-    _imr: RO<u32>,
+    _isr: u32,
+    _ipr: u32,
+    _imr: u32,
     _unused0: [u32;3],
     pub enable: WO<u32>,
     _unused1: [u32;3],
@@ -30,11 +30,6 @@ impl AIC {
     pub fn new() -> &'static mut AIC {
         unsafe {&mut *(AIC_ADDR as *mut AIC)}
     }
-
-    // #[inline(always)]
-    // pub fn init(&mut self) -> &mut Self {
-    //     self
-    // }
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {

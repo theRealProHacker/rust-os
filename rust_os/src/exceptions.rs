@@ -33,7 +33,6 @@ impl IVT {
       // Hier müssen wir in die Register den assembly code reinschreiben, 
       // der in den handler springt, der in den handler-Registern steht
       // https://armconverter.com/?code=ldr%20pc,%20%5Bpc,%20%230x14%5D
-      // Wir haben little-endian und big-endian versucht, aber nur big hat funktioniert
       const ASM_AS_BYTES: u32 = 0xE59FF014;
       // AT91_interrupts.pdf p.2
       // https://armconverter.com/?code=ldr%20pc,%5Bpc,%23-0xF20%5D
