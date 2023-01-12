@@ -102,7 +102,9 @@ extern "aapcs" fn src1_handler() {
   if timer.status.read() & 1 != 0 {
     println!("!");
   } else if dbgu.status.read() & (serial::COMMRX) != 0 {
+    println!("dbgu read");
     let char = dbgu.read() as char;
+    println!("0");
     // unsafe {
     //   CHAR = Some(dbgu.read() as char);
     // }
