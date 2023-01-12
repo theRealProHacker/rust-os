@@ -13,6 +13,7 @@ mod sys_timer;
 mod power_management;
 use core::{arch::asm, ptr::read_volatile};
 use interrupts::SrcType;
+use own_asm::demask_interrupts;
 
 #[panic_handler]
 fn panic_handler(_: &core::panic::PanicInfo) -> ! {
@@ -82,38 +83,42 @@ extern "C" fn _start() {
   // }
   println!("Application start");
   loop {
-    unsafe {
-      // reads like "if there is some char in CHAR then (re)set CHAR to None and print char 20 times"
-      if let Some(char) = CHAR {
-        CHAR = None;
-        for _ in 1..20 {
-          print!("{char}");
-        }
-      }
-      for _ in 1..100000 {
+    for _ in 1..100000 {
+      unsafe {
         asm!("nop");
       }
-      println!("No char")
     }
+    println!("No char");
   }
 }
 
-static mut CHAR: Option<char> = None;
+// static mut CHAR: Option<char> = None;
 
 extern "aapcs" fn src1_handler() {
-  trampolin!(0, _src1_handler);
-}
+//   trampolin!(0, _src1_handler);
+// }
 
-#[inline(never)]
-extern "aapcs" fn _src1_handler(){
+// #[inline(never)]
+// extern "aapcs" fn _src1_handler(){
   let timer = sys_timer::SysTimer::new();
   let dbgu = serial::Serial::new();
   if timer.status.read() & 1 != 0 {
     println!("!");
   } else if dbgu.status.read() & (serial::COMMRX) != 0 {
-    unsafe {
-      CHAR = Some(dbgu.read() as char);
-    }
+    let char = dbgu.read() as char;
+    // unsafe {
+    //   CHAR = Some(dbgu.read() as char);
+    // }
+    // unsafe {
+    //   // reads like "if there is some char in CHAR then (re)set CHAR to None and print char 20 times"
+    //   if let Some(char) = CHAR {
+    //     CHAR = None;
+        for _ in 1..20 {
+          print!("{char}");
+        }
+      // }
+    // }
   }
   interrupts::AIC::new().end_of_interrupt();
+  demask_interrupts();
 }

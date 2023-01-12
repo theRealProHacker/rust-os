@@ -1,4 +1,3 @@
-use core::arch::asm;
 use volatile_register::{RO, RW, WO};
 
 const AIC_ADDR: u32 = 0xFFFFF000;
