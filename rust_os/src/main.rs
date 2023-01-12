@@ -74,7 +74,7 @@ extern "C" fn _start() {
   dbgu.enable_interrupts();
   println!("sys timer");
   let sys_timer = sys_timer::SysTimer::new().init();
-  sys_timer.set_interval(32768); // 1 sec
+  sys_timer.set_interval(32768/2); // 1 sec
   // let c = read(); 
   // if c == b's' {
   //   unsafe {
