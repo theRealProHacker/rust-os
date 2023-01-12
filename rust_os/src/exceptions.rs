@@ -15,10 +15,10 @@ pub struct IVT {
   fiq: WO<u32>,
   // Hier sind die pointer zu den echten handlern
   // Wir können nicht unendlich weit springen, deswegen ein Offset von 5*4 = 20(dec) = 1*16+4*1 = 14(hex)
-  pub undef_handler: WO<u32>,
-  pub swi_handler: WO<u32>,
-  prefetch_handler: WO<u32>,
-  pub data_abort_handler: WO<u32>,
+  pub undef_handler: WO<extern "aapcs" fn()>,
+  pub swi_handler: WO<extern "aapcs" fn()>,
+  prefetch_handler: WO<extern "aapcs" fn()>,
+  pub data_abort_handler: WO<extern "aapcs" fn()>,
 }
 
 impl IVT {

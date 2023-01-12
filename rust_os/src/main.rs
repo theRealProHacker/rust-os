@@ -26,7 +26,7 @@ extern "aapcs" fn dab_handler() {
   let content = unsafe {
     read_volatile((a-8) as *const [u32;16])
   };
-  println!("Data abort at {a} with context: {content:?}");
+  println!("Data abort at {} with context: {content:?}", a-8);
   loop{}
 }
 
@@ -36,7 +36,7 @@ extern "aapcs" fn und_handler() {
   let content = unsafe {
     read_volatile((a-8) as *const [u32;16])
   };
-  println!("Undefined Instruction at {a} with context: {content:?}");
+  println!("Undefined Instruction at {} with context: {content:?}", a-8);
   loop{}
 }
 
@@ -58,9 +58,9 @@ extern "C" fn _start() {
   println!("exceptions");
   let ivt = exceptions::IVT::new().init();
   unsafe {
-    ivt.data_abort_handler.write(dab_handler as u32);
-    ivt.undef_handler.write(und_handler as u32);
-    ivt.swi_handler.write(swi_handler as u32);
+    ivt.data_abort_handler.write(dab_handler);
+    ivt.undef_handler.write(und_handler);
+    ivt.swi_handler.write(swi_handler);
   }
   // interrupt setup in aic and devices
   println!("interrupts");
@@ -102,21 +102,10 @@ extern "aapcs" fn src1_handler() {
   if timer.status.read() & 1 != 0 {
     println!("!");
   } else if dbgu.status.read() & (serial::RXRDY) != 0 {
-    println!("dbgu read");
     let char = dbgu.read() as char;
-    println!("0");
-    // unsafe {
-    //   CHAR = Some(dbgu.read() as char);
-    // }
-    // unsafe {
-    //   // reads like "if there is some char in CHAR then (re)set CHAR to None and print char 20 times"
-    //   if let Some(char) = CHAR {
-    //     CHAR = None;
-        for _ in 1..20 {
-          print!("{char}");
-        }
-      // }
-    // }
+    for _ in 1..20 {
+      print!("{char}");
+    }
   } else {
     println!("unknown interrupt");
   }
