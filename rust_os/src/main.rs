@@ -117,6 +117,8 @@ extern "aapcs" fn src1_handler() {
         }
       // }
     // }
+  } else {
+    println!("unknown interrupt");
   }
   interrupts::AIC::new().end_of_interrupt();
   demask_interrupts();
