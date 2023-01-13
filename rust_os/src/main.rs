@@ -14,7 +14,9 @@ mod power_management;
 // mod thread;
 use interrupts::SrcType;
 use own_asm::demask_interrupts;
-use core::arch::arm::__nop;
+use core::arch::{arm::__nop, global_asm};
+
+global_asm!(include_str!("start.s"));
 
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
@@ -24,9 +26,8 @@ fn panic_handler(info: &core::panic::PanicInfo) -> ! {
 
 #[link_section = ".init"]
 #[no_mangle]
-extern "C" fn _start() -> ! {
+extern "aapcs" fn rust_start() -> ! {
   memory_controller::remap();
-  own_asm::init_sps();
   exceptions::IVT::new().init();
   interrupts::AIC::new().set_handler(1, src1_handler as u32, 0, SrcType::LowLevelSens);
   serial::Serial::new().init().enable_interrupts();

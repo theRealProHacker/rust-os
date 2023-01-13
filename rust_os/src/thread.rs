@@ -33,6 +33,7 @@ impl Registers {
 }
 
 type ID = usize;
+
 #[derive(Copy, Clone)]
 enum State {
     Running,
@@ -84,6 +85,8 @@ impl ThreadList {
         if let Some(thread) = self.get_curr_thread() {
             if thread.next_thread.is_some() {
                 self.curr_thread = thread.next_thread;
+            } else {
+                self.curr_thread = self.array.iter().find()
             }
         }
     }
