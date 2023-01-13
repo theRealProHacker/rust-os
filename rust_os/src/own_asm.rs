@@ -86,6 +86,7 @@ pub fn init_sps () {
       und_sp = in (reg) STACK_BOTTOM-STACK_SIZE*2,
       abt_sp = in (reg) STACK_BOTTOM-STACK_SIZE*3,
       irq_sp = in (reg) STACK_BOTTOM-STACK_SIZE*4,
+      options(nomem) 
     )
   };
 }
@@ -95,17 +96,11 @@ macro_rules! trampolin {
     ($lr_offset:expr, $handler:ident) => (
         unsafe {
           asm!(
-            concat!("sub r14, ", $lr_offset),
+            concat!("sub lr, ", $lr_offset),
             "push  {{r0-r12, lr}}",
-            "sub    sp, 0x40", 
           );
-            // TODO: is above necessary and/or correct
-            // From grandiOS
-            // make a bit of space on the stack for rust, since rust creates code like: "str r0, [pc, #4]" 
-            // it expects the sp to be decremented before once. The 0x40 is a random guess and provides space for a few var$
           $handler();
           asm!(
-            "add    sp, 0x40",
             "pop    {{r0-r12, pc}}",
           );
         }

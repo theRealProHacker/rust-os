@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
-#![feature(naked_functions)]
-#![feature(const_mut_refs)]
 #![feature(asm_const)]
+#![feature(stdsimd)]
+#![feature(let_chains)]
 
 mod own_asm;
 mod exceptions;
@@ -11,76 +11,29 @@ mod serial;
 mod interrupts;
 mod sys_timer;
 mod power_management;
-use core::{arch::asm, ptr::read_volatile};
+// mod thread;
 use interrupts::SrcType;
 use own_asm::demask_interrupts;
+use core::arch::arm::__nop;
 
 #[panic_handler]
-fn panic_handler(_: &core::panic::PanicInfo) -> ! {
-  println!("\npanic");
+fn panic_handler(info: &core::panic::PanicInfo) -> ! {
+  println!("\n Panicked: {:?}", info);
   loop {}
-}
-
-extern "aapcs" fn dab_handler() {
-  let a: u32;
-  get_reg!(a=lr);
-  let content = unsafe {
-    read_volatile((a-8) as *const [u32;16])
-  };
-  println!("Data abort at {} with context: {content:?}", a-8);
-  loop{}
-}
-
-extern "aapcs" fn und_handler() {
-  let a: u32;
-  get_reg!(a=lr);
-  let content = unsafe {
-    read_volatile((a-8) as *const [u32;16])
-  };
-  println!("Undefined Instruction at {} with context: {content:?}", a-8);
-  loop{}
-}
-
-extern "aapcs" fn swi_handler() {
-  trampolin!(0, _swi_handler);
-}
-
-fn _swi_handler() {
-  print!("Software interrupt\n");
 }
 
 #[link_section = ".init"]
 #[no_mangle]
-extern "C" fn _start() {
+extern "C" fn _start() -> ! {
   memory_controller::remap();
   own_asm::init_sps();
-  let dbgu = serial::Serial::new().init();
-  println!("Starting up");
-  println!("exceptions");
-  let ivt = exceptions::IVT::new().init();
-  unsafe {
-    ivt.data_abort_handler.write(dab_handler);
-    ivt.undef_handler.write(und_handler);
-    ivt.swi_handler.write(swi_handler);
-  }
-  // interrupt setup in aic and devices
-  println!("interrupts");
-  interrupts::AIC::new().set_handler(
-    1, 
-    src1_handler as u32, 
-    0, 
-    SrcType::LowLevelSens
-  );
-  println!("debug interrupt enable");
-  dbgu.enable_interrupts();
-  println!("sys timer");
-  let sys_timer = sys_timer::SysTimer::new().init();
-  sys_timer.set_interval(32768/2); // 1 sec
+  exceptions::IVT::new().init();
+  interrupts::AIC::new().set_handler(1, src1_handler as u32, 0, SrcType::LowLevelSens);
+  serial::Serial::new().init().enable_interrupts();
+  sys_timer::SysTimer::new().init().set_interval(32768/60); // 1 sec
   println!("Application start");
   loop {
-    unsafe {
-      asm!("nop");
-    }
+    unsafe{__nop();}
   }
 }
 
