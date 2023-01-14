@@ -38,3 +38,10 @@ _start:
     @ back to backup
     msr CPSR, v4
     b rust_start
+
+.global _start
+_src1_handler:
+    push {r0-r15}
+    mov r0, sp
+    mrs r1, spsr
+    b src1_handler
