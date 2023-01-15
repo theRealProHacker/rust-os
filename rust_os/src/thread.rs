@@ -1,6 +1,5 @@
-use crate::print;
-
 /// A register struct
+#[repr(C)]
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
 pub struct Registers {
@@ -46,7 +45,7 @@ enum State {
 pub struct Thread {
     id: ID,
     state: State,
-    regs: Registers,
+    pub regs: Registers,
     next_thread: Option<ID>,
 }
 
@@ -77,15 +76,14 @@ impl ThreadList {
         Ok(id)
     }
 
-    pub fn get_curr_thread(&mut self) -> Option<&Thread> {
-        if let Some(thread_id) = self.curr_thread {
-            self.array.get(thread_id).unwrap().as_ref()
-        } else{
-            None
+    pub fn get_curr_thread(&mut self) -> Option<&mut Thread> {
+        match self.curr_thread {
+            Some(thread_id) => self.array.get_mut(thread_id).unwrap().as_mut(),
+            None => None
         }
     }
 
-    pub fn schedule_next(&mut self) -> ! {
+    pub fn schedule_next(&mut self) -> Result<ID, &'static str> {
         if let Some(thread) = self.get_curr_thread() {
             if thread.next_thread.is_some() {
                 self.curr_thread = thread.next_thread;
@@ -93,11 +91,14 @@ impl ThreadList {
                 let (new_thread,_) = self.array.iter().enumerate().find(|(_,x)| x.is_some()).unwrap();
                 self.curr_thread = Some(new_thread);
             }
+            Ok(self.curr_thread.unwrap())
+        } else {
+            Err("No thread could be scheduled because there are no threads ready")
         }
-        print!("No thread could be scheduled doing work");
-        loop {}
     }
 }
+
+
 
 #[link_section = ".kernel.thread_array"]
 pub static mut THREADS: ThreadList = ThreadList {
