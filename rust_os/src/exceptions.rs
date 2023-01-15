@@ -57,11 +57,10 @@ impl IVT {
 
 // handler
 extern "aapcs" fn dab_handler() {
-    print!("Data abort");
     let a: u32;
     get_reg!(a = lr);
-    let content = unsafe { read_volatile((a - 8) as *const [u32; 16]) };
-    println!(" at {} with context: {content:?}", a - 8);
+    let addr = super::memory_controller::get_abort_adress();
+    println!("Data abort at {} accessing {addr}", a - 8);
     loop {}
 }
 
