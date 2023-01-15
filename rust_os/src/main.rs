@@ -96,10 +96,7 @@ extern "aapcs" fn src1_handler(regs: &mut Registers) {
     }
     match THREADS.get_curr_thread() {
         Some(thread) => {
-            println!("Stack pointer to Registers: {regs:p}");
             regs.clone_from(&thread.regs);
-            println!("Saved regs: {:?}", thread.regs);
-            println!("Stack regs: {regs:?} at {regs:p}");
             interrupts::AIC::new().end_of_interrupt();
         }
         None => {
