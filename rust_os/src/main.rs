@@ -61,7 +61,7 @@ extern "aapcs" fn rust_start() -> ! {
 fn thread_function(c: char) {
     for _ in 0..20 {
         println!("{c}");
-        wait(50000);
+        wait(500_000);
     }
     exit();
 }
