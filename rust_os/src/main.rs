@@ -67,12 +67,13 @@ fn thread_function(c: char) {
 }
 
 #[no_mangle]
-extern "aapcs" fn src1_handler(regs: &mut Registers) {
+extern "aapcs" fn src1_handler(_regs: *mut Registers) {
     let timer = sys_timer::SysTimer::new();
     let dbgu = serial::Serial::new();
     // Get a mutable reference to the static THREADS
     #[allow(non_snake_case)]
     let THREADS = unsafe { &mut thread::THREADS };
+    let regs = unsafe { &mut *(_regs) };
     match THREADS.get_curr_thread() {
         Some(thread) => thread.regs = regs.clone(),
         None => (),
