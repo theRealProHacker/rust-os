@@ -26,11 +26,6 @@ impl Registers {
     pub fn empty() -> Registers {
         unsafe { core::mem::transmute([0;16])}
     }
-
-    pub fn from_regs() -> Registers {
-        // IDEA: just push everything to the stack and then get the array from the current stackpointer upwards and cast it as Registers
-        Registers::empty()
-    }
 }
 
 type ID = usize;

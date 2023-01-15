@@ -57,22 +57,24 @@ impl IVT {
 
 // handler
 extern "aapcs" fn dab_handler() {
+  print!("Data abort");
   let a: u32;
   get_reg!(a=lr);
   let content = unsafe {
     read_volatile((a-8) as *const [u32;16])
   };
-  println!("Data abort at {} with context: {content:?}", a-8);
+  println!(" at {} with context: {content:?}", a-8);
   loop{}
 }
 
 extern "aapcs" fn und_handler() {
+  print!("Undefined Instruction");
   let a: u32;
   get_reg!(a=lr);
   let content = unsafe {
     read_volatile((a-8) as *const [u32;16])
   };
-  println!("Undefined Instruction at {} with context: {content:?}", a-8);
+  println!(" at {} with context: {content:?}", a-8);
   loop{}
 }
 
