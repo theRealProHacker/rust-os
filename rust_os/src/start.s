@@ -6,7 +6,7 @@ _start:
     @ v1 is the moving stack pointer, v2 the individual stacksizes
     @ v3 the moving cpsr
     mov v1, #0x24000000
-    mov v2, #0x10000 @ 64kBv
+    mov v2, #0x10000 @ 64kB
     @ svc
     mrs v3, cpsr
     mov sp, v1

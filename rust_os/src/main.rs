@@ -52,15 +52,15 @@ extern "aapcs" fn rust_start() -> ! {
     sys_timer::SysTimer::new().init().set_interval(32768); // 1 FPS
     println!("Application start");
     // Go into user mode
-    unsafe {
-        asm!(
-            "mrs r1, CPSR",
-            "bic r1, #0x1F",
-            "orr r1, #0x10",
-            "msr CPSR, r1",
-            out("r1") _, 
-        );
-    }
+    // unsafe {
+    //     asm!(
+    //         "mrs r1, CPSR",
+    //         "bic r1, #0x1F",
+    //         "orr r1, #0x10",
+    //         "msr CPSR, r1",
+    //         out("r1") _, 
+    //     );
+    // }
     idle()
 }
 
