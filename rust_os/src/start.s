@@ -52,7 +52,7 @@ _src1_handler:
  	*/
  	@ sub	sp, #(15*4)
  	@ stmia sp, {r0-r14}^
-    push {r0-r14}^
+    push {r0-r14}
     
   	mov	r0, sp
  	bl	src1_handler
@@ -65,7 +65,7 @@ _src1_handler:
  	@ ldmia	sp, {r0-r14}^
  	@ nop
  	@ add	sp, sp, #(15*4)
-    pop {r0-r14}^
+    pop {r0-r14}
  
  	/* Rücksprung durch Laden des PC mit S-Bit */ 
  	ldmfd	sp!, {pc}^
