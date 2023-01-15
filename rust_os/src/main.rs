@@ -16,7 +16,7 @@ mod serial;
 mod sys_timer;
 mod thread;
 mod util;
-use core::arch::{arm::__nop, global_asm};
+use core::arch::{global_asm, asm};
 use registers::Registers;
 use util::{exit, idle, wait};
 
@@ -51,11 +51,16 @@ extern "aapcs" fn rust_start() -> ! {
     serial::Serial::new().init().enable_interrupts();
     sys_timer::SysTimer::new().init().set_interval(32768); // 1 FPS
     println!("Application start");
-    loop {
-        unsafe {
-            __nop();
-        }
+    // Go into user mode
+    unsafe {
+        asm!(
+            "mrs, {reg}, CPSR",
+            "and {reg}, #0x10",
+            "msr CPSR, {reg}",
+            reg = out(reg) _, 
+        );
     }
+    idle()
 }
 
 fn thread_function(c: char) {
