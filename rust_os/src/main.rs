@@ -54,10 +54,11 @@ extern "aapcs" fn rust_start() -> ! {
     // Go into user mode
     unsafe {
         asm!(
-            "mrs {reg}, CPSR",
-            "and {reg}, #0x10",
-            "msr CPSR, {reg}",
-            reg = out(reg) _, 
+            "mrs r1, CPSR",
+            "bic r1, #0x1F",
+            "orr r1, #0x10",
+            "msr CPSR, r1",
+            out("r1") _, 
         );
     }
     idle()
