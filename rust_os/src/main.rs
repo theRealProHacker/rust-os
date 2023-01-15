@@ -13,10 +13,11 @@ mod interrupts;
 mod sys_timer;
 mod power_management;
 mod thread;
-use interrupts::SrcType;
+mod util;
+use util::{wait, idle, exit};
 use own_asm::demask_interrupts;
 use thread::Registers;
-use core::arch::{arm::__nop, global_asm, asm};
+use core::arch::{arm::__nop, global_asm};
 
 global_asm!(include_str!("start.s"), options(raw));
 
@@ -35,7 +36,7 @@ extern "aapcs" {
 extern "aapcs" fn rust_start() -> ! {
   memory_controller::remap();
   exceptions::IVT::new().init();
-  interrupts::AIC::new().set_handler(1, _src1_handler as u32, 0, SrcType::LowLevelSens);
+  interrupts::AIC::new().set_handler(1, _src1_handler as u32, 0, interrupts::SrcType::LowLevelSens);
   serial::Serial::new().init().enable_interrupts();
   sys_timer::SysTimer::new().init().set_interval(32768); // 1 FPS
   println!("Application start");
@@ -47,16 +48,9 @@ extern "aapcs" fn rust_start() -> ! {
 fn thread_function(c: char) {
   for _ in 0..20 {
     println!("{c}");
+    wait(50000);
   }
-}
-
-#[inline(always)]
-fn idle() -> ! {
-  loop {
-    unsafe {
-      asm!("mcr	p15, 0, r0, c7, c0, 4")
-    }
-  }
+  exit();
 }
 
 #[no_mangle]
