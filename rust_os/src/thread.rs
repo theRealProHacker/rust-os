@@ -64,7 +64,7 @@ impl ThreadList {
         if run_thread {
             self.curr_thread = Some(id);
         } else {
-            self.array[id-1].unwrap().next_thread = Some(id);
+            self.array.get_mut(id-1).unwrap().as_mut().unwrap().next_thread = Some(id);
         }
         Ok(id)
     }
@@ -80,15 +80,8 @@ impl ThreadList {
         if let Some(thread) = self.get_curr_thread() {
             if thread.next_thread.is_some() {
                 self.curr_thread = thread.next_thread;
-            } else {
-                let (new_thread, _) = self
-                    .array
-                    .iter()
-                    .enumerate()
-                    .find(|(_, x)| x.is_some())
-                    .unwrap();
-                self.curr_thread = Some(new_thread);
             }
+            // If the current_thread doesn't have a next thread it is the only thread
             Ok(self.curr_thread.unwrap())
         } else {
             Err("No thread could be scheduled because there are no threads ready")
