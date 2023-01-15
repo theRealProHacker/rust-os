@@ -63,6 +63,8 @@ impl ThreadList {
         self.array[id] = Some(new_thread);
         if run_thread {
             self.curr_thread = Some(id);
+        } else {
+            self.array[id-1].unwrap().next_thread = Some(id);
         }
         Ok(id)
     }
