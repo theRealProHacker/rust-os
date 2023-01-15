@@ -16,7 +16,7 @@ mod serial;
 mod sys_timer;
 mod thread;
 mod util;
-use core::arch::{global_asm, asm};
+use core::arch::{global_asm};
 use registers::Registers;
 use util::{exit, idle, wait};
 

@@ -14,7 +14,8 @@ pub fn idle() -> ! {
     loop {
         unsafe {
             // wait for interrupt
-            asm!("mcr	p15, 0, r0, c7, c0, 4")
+            // asm!("mcr	p15, 0, r0, c7, c0, 4")
+            asm!("nop")
         }
     }
 }
