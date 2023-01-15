@@ -52,8 +52,10 @@ impl AIC {
         self
     }
 
+    /// Must be called after interrupt completion
     #[inline(always)]
     pub fn end_of_interrupt(&mut self) {
         unsafe{self.eoicr.write(1)}
+        super::own_asm::demask_interrupts();
     }
 }

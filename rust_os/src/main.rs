@@ -16,7 +16,6 @@ mod power_management;
 mod thread;
 mod util;
 use util::{wait, idle, exit};
-use own_asm::{demask_interrupts, mask_interrupts};
 use thread::Registers;
 use core::arch::{arm::__nop, global_asm};
 
@@ -24,7 +23,7 @@ global_asm!(include_str!("start.s"), options(raw));
 
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
-  mask_interrupts();
+  own_asm::mask_interrupts();
   println!("\n Panicked\nmsg: {:?}\npayload: {:?}", info.message(), info.payload());
   loop {}
 }
@@ -87,9 +86,11 @@ extern "aapcs" fn src1_handler(regs: &mut thread::Registers) {
       regs.clone_from(&thread.regs);
       println!("Saved regs: {:?}", thread.regs);
       println!("Stack regs: {regs:?} at {regs:p}");
+      interrupts::AIC::new().end_of_interrupt();
     },
-    None => idle()
+    None => {
+      interrupts::AIC::new().end_of_interrupt();
+      idle()
+    }
   }
-  interrupts::AIC::new().end_of_interrupt();
-  demask_interrupts();
 }
