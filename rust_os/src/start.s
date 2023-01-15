@@ -43,12 +43,12 @@ _start:
 .global _src1_handler
 _src1_handler:
     @ first go into sys mode
-    push r0
+    push {r0}
     mrs r0, cpsr
     bic r0, r0, #0x1F
     orr r0, #0x13
     msr cpsr, r0
-    pop r0
+    pop {r0}
     @ now push everything onto the stack and pass the stack pointer to scr1_handler
     sub	lr, #4
  	stmfd sp!, {lr}
@@ -61,7 +61,7 @@ _src1_handler:
  	stmia sp, {r0-r14}^
     
   	mov	r0, sp
- 	bl	scr1_handler
+ 	bl	src1_handler
  
  	/*
  	 * Zuvor gesicherte Register wieder herstellen (R0-R12, R13-R14
