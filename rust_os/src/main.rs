@@ -47,17 +47,10 @@ extern "aapcs" fn rust_start() -> ! {
     serial::Serial::new().init().enable_interrupts();
     sys_timer::SysTimer::new().init().set_interval(32768); // 1 FPS
     println!("Application start");
-    // Go into user mode
-    // unsafe {
-    //     asm!(
-    //         "mrs r1, CPSR",
-    //         "bic r1, #0x1F",
-    //         "orr r1, #0x10",
-    //         "msr CPSR, r1",
-    //         out("r1") _,
-    //     );
-    // }
-    idle()
+    let mut regs = Registers::empty();
+    regs.pc = idle as u32;
+    unsafe { thread::THREADS.create_thread(regs).unwrap(); }
+    idle();
 }
 
 fn thread_function(c: char) {
@@ -102,9 +95,6 @@ extern "aapcs" fn src1_handler(_regs: *mut Registers) {
             regs.clone_from(&thread.regs);
             interrupts::AIC::new().end_of_interrupt();
         }
-        None => {
-            interrupts::AIC::new().end_of_interrupt();
-            idle();
-        }
+        None => panic!("Didn't get a current thread")
     }
 }
