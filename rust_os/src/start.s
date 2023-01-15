@@ -52,6 +52,7 @@ _src1_handler:
 
   	mov	r0, sp
     bl _print_reg
+    mov r0, sp
  	bl	src1_handler
  
  	/*
