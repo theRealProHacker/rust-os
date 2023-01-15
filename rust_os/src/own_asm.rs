@@ -17,10 +17,9 @@ pub fn demask_interrupts() {
   unsafe{
     asm!(
       "MRS {reg}, CPSR",
-      "BIC {reg}, {seventh_bit}",
+      "BIC {reg}, #(1<<7)",
       "MSR CPSR, {reg}",
-      reg = out(reg) _,
-      seventh_bit = const 1 << 7 as u32
+      reg = out(reg) _
     );
   }
 }

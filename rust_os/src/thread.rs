@@ -1,3 +1,5 @@
+use crate::print;
+
 /// A register struct
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
@@ -41,35 +43,37 @@ enum State {
 }
 
 #[derive(Copy, Clone)]
-struct Thread {
+pub struct Thread {
     id: ID,
     state: State,
     regs: Registers,
     next_thread: Option<ID>,
 }
 
-struct ThreadList {
+pub struct ThreadList {
     array: [Option<Thread>;16],
     curr_thread: Option<ID>,
 }
 
 impl ThreadList {
     /// Add a thread to the thread_list. Returns a Result that contains the threads id. 
-    pub fn create_thread(&mut self) -> Result<ID, &'static str> {
-        // TODO: take a function with arguments and pass it to the thread
-        let last_thread = self.array.iter().filter_map(|&option| option).find(|thread| thread.next_thread.is_none()).unwrap();
-        let id = last_thread.id+1;
-        if id >= self.array.len() {
-            return Err("Can't create new thread. The list of threads is full.");
-        }
+    pub fn create_thread(&mut self, regs: Registers) -> Result<ID, &'static str> {
+        let id = match self.array.iter().enumerate().find(|(_,thread)| thread.is_none()) {
+            Some((id,_)) => id,
+            None => return Err("Can't create new thread. The list of threads is full.")
+        };
+        // Whether we should instantly run the thread
+        let run_thread = self.get_curr_thread().is_none();
         let new_thread = Thread{
             id,
-            state: State::Ready,
-            regs: Registers::empty(),
+            state: if run_thread {State::Running} else {State::Ready},
+            regs,
             next_thread: None
         };
         self.array[id] = Some(new_thread);
-        self.curr_thread = Some(id);
+        if run_thread {
+            self.curr_thread = Some(id);
+        }
         Ok(id)
     }
 
@@ -81,19 +85,22 @@ impl ThreadList {
         }
     }
 
-    pub fn schedule_next(&mut self) {
+    pub fn schedule_next(&mut self) -> ! {
         if let Some(thread) = self.get_curr_thread() {
             if thread.next_thread.is_some() {
                 self.curr_thread = thread.next_thread;
             } else {
-                self.curr_thread = self.array.iter().find()
+                let (new_thread,_) = self.array.iter().enumerate().find(|(_,x)| x.is_some()).unwrap();
+                self.curr_thread = Some(new_thread);
             }
         }
+        print!("No thread could be scheduled doing work");
+        loop {}
     }
 }
 
 #[link_section = ".kernel.thread_array"]
-static mut THREADS: ThreadList = ThreadList {
+pub static mut THREADS: ThreadList = ThreadList {
     array: [None;16],
     curr_thread: None
 };

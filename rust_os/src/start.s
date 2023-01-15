@@ -1,8 +1,8 @@
-@ This file contains the start function. Here we init the stackpointers in all modes before Rust takes over. 
+@ The start function. Here we init the stackpointers in all modes before Rust takes over. 
 .global _start
 .section .init
 _start:
-    @ https:@community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/how-to-load-constants-in-assembly-for-arm-architecture
+    @ https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/how-to-load-constants-in-assembly-for-arm-architecture
     @ v1 is the moving stack pointer, v2 the individual stacksizes
     @ v3 the moving cpsr, v4 the backup
     mov v1, #0x24000000
@@ -39,7 +39,7 @@ _start:
     msr CPSR, v4
     b rust_start
 
-.global _start
+.global _src1_handler
 _src1_handler:
     push {r0-r15}
     mov r0, sp

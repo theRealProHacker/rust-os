@@ -11,9 +11,10 @@ mod serial;
 mod interrupts;
 mod sys_timer;
 mod power_management;
-// mod thread;
+mod thread;
 use interrupts::SrcType;
 use own_asm::demask_interrupts;
+use thread::Registers;
 use core::arch::{arm::__nop, global_asm};
 
 global_asm!(include_str!("start.s"), options(raw));
@@ -42,16 +43,28 @@ extern "aapcs" fn rust_start() -> ! {
   }
 }
 
+fn thread_function(c: char) {
+  for _ in 0..20 {
+    println!("{c}");
+  }
+}
+
 #[no_mangle]
-extern "aapcs" fn src1_handler() {
+extern "aapcs" fn src1_handler(regs: &mut thread::Registers) {
   let timer = sys_timer::SysTimer::new();
   let dbgu = serial::Serial::new();
+  // TODO: save regs
   if timer.status.read() == 1 {
     println!("!");
   } else if dbgu.status.read() & (serial::RXRDY) != 0 {
-    let char = dbgu.read() as char;
-    for _ in 1..20 {
-      print!("{char}");
+    let mut thread_regs = Registers::empty();
+    thread_regs.r0 = dbgu.read() as u32;
+    thread_regs.pc = thread_function as u32;
+    unsafe {
+      match thread::THREADS.create_thread(thread_regs) {
+        Ok(id) => println!("Created thread {id}"),
+        Err(msg) => println!("{msg}")
+      }
     }
   } else {
     println!("unknown interrupt");
