@@ -50,7 +50,7 @@ extern "aapcs" fn rust_start() -> ! {
     let mut regs = Registers::empty();
     regs.pc = idle as u32;
     unsafe { thread::THREADS.create_thread(regs).unwrap(); }
-    idle();
+    idle(); // we just wait for the first timer interrupt
 }
 
 fn thread_function(c: char) {

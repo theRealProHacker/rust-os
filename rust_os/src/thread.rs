@@ -48,11 +48,11 @@ impl ThreadList {
             None => return Err("Can't create new thread. The list of threads is full."),
         };
         // Whether we should instantly run the thread
-        let run_thread = self.get_curr_thread().is_none();
+        let is_only_thread = self.get_curr_thread().is_none();
         regs.sp = (USER_MEM.as_ptr() as usize + USER_STACK_SIZE * (id + 1)) as u32;
         let new_thread = Thread {
             id,
-            state: if run_thread {
+            state: if is_only_thread {
                 State::Running
             } else {
                 State::Ready
@@ -61,15 +61,10 @@ impl ThreadList {
             next_thread: None,
         };
         self.array[id] = Some(new_thread);
-        if run_thread {
+        if is_only_thread {
             self.curr_thread = Some(id);
         } else {
-            self.array
-                .get_mut(id - 1)
-                .unwrap()
-                .as_mut()
-                .unwrap()
-                .next_thread = Some(id);
+            self.get_thread(id-1).unwrap().next_thread = Some(id);
         }
         Ok(id)
     }
@@ -85,11 +80,26 @@ impl ThreadList {
         if let Some(thread) = self.get_curr_thread() {
             if thread.next_thread.is_some() {
                 self.curr_thread = thread.next_thread;
+            } else {
+                match self.idle_thread().next_thread {
+                    Some(thread) => self.curr_thread = Some(thread),
+                    None => self.curr_thread = Some(0)
+                }
             }
-            // If the current_thread doesn't have a next thread it is the only thread
             Ok(self.curr_thread.unwrap())
         } else {
             Err("No thread could be scheduled because there are no threads ready")
         }
+    }
+
+    pub fn get_thread(&mut self, id: ID) -> Option<&mut Thread> {
+        match self.array.get_mut(id) {
+            Some(element) => element.as_mut(),
+            None => None
+        }
+    }
+
+    fn idle_thread(&mut self) -> &Thread {
+        self.get_thread(0).unwrap()
     }
 }
