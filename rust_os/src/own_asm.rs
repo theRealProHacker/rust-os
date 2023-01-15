@@ -24,18 +24,17 @@ pub fn demask_interrupts() {
   }
 }
 
-// #[inline(always)]
-// pub fn mask_interrupts() {
-//   unsafe{
-//     asm!(
-//     "MRS {r1}, CPSR",
-//     "ORR {r1}, {seventh_bit}",
-//     "MSR CPSR, {r1}",
-//     r1 = out(reg) _,
-//     seventh_bit = const 1 << 7 as u32
-//     );
-//   }
-// }
+#[inline(always)]
+pub fn mask_interrupts() {
+  unsafe{
+    asm!(
+    "MRS {r1}, CPSR",
+    "ORR {r1}, #(1<<7)",
+    "MSR CPSR, {r1}",
+    r1 = out(reg) _,
+    );
+  }
+}
 
 #[macro_export]
 macro_rules! trampolin {
