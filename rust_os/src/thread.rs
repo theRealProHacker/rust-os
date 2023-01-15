@@ -1,32 +1,17 @@
-/// A register struct
-#[repr(C)]
-#[allow(dead_code)]
-#[derive(Copy, Clone, Debug)]
-pub struct Registers {
-    pub r0: u32,
-    pub r1: u32,
-    pub r2: u32,
-    pub r3: u32,
-    pub r4: u32,
-    pub r5: u32,
-    pub r6: u32,
-    pub r7: u32,
-    pub r8: u32,
-    pub r9: u32,
-    pub r10: u32,
-    pub r11: u32,
-    pub r12: u32,
-    pub sp: u32,
-    pub lr: u32,
-    pub pc: u32
-}
+use super::Registers;
 
-impl Registers {
-    /// Generates empty registers initialized at 0
-    pub fn empty() -> Registers {
-        unsafe { core::mem::transmute([0;16])}
-    }
-}
+const USER_MEM_SIZE: usize = 0x2_000_000 - 5 * 64 * 1024 - core::mem::size_of::<ThreadList>();
+const THREAD_NUMBER: usize = 16;
+const USER_STACK_SIZE: usize = USER_MEM_SIZE / 2 / THREAD_NUMBER;
+
+#[link_section = ".kernel.thread_array"]
+pub static mut THREADS: ThreadList = ThreadList {
+    array: [None; THREAD_NUMBER],
+    curr_thread: None,
+};
+
+#[link_section = ".user_mem"]
+pub static USER_MEM: [u32; USER_MEM_SIZE] = [0; USER_MEM_SIZE];
 
 type ID = usize;
 
@@ -36,6 +21,7 @@ enum State {
     Ready,
 }
 
+#[allow(dead_code)]
 #[derive(Copy, Clone)]
 pub struct Thread {
     id: ID,
@@ -45,24 +31,34 @@ pub struct Thread {
 }
 
 pub struct ThreadList {
-    array: [Option<Thread>;16],
+    array: [Option<Thread>; 16],
     curr_thread: Option<ID>,
 }
 
 impl ThreadList {
-    /// Add a thread to the thread_list. Returns a Result that contains the threads id. 
-    pub fn create_thread(&mut self, regs: Registers) -> Result<ID, &'static str> {
-        let id = match self.array.iter().enumerate().find(|(_,thread)| thread.is_none()) {
-            Some((id,_)) => id,
-            None => return Err("Can't create new thread. The list of threads is full.")
+    /// Add a thread to the thread_list. Returns a Result that contains the threads id.
+    pub fn create_thread(&mut self, mut regs: Registers) -> Result<ID, &'static str> {
+        let id = match self
+            .array
+            .iter()
+            .enumerate()
+            .find(|(_, thread)| thread.is_none())
+        {
+            Some((id, _)) => id,
+            None => return Err("Can't create new thread. The list of threads is full."),
         };
         // Whether we should instantly run the thread
         let run_thread = self.get_curr_thread().is_none();
-        let new_thread = Thread{
+        regs.sp = (USER_MEM.as_ptr() as usize + USER_STACK_SIZE * (id + 1)) as u32;
+        let new_thread = Thread {
             id,
-            state: if run_thread {State::Running} else {State::Ready},
+            state: if run_thread {
+                State::Running
+            } else {
+                State::Ready
+            },
             regs,
-            next_thread: None
+            next_thread: None,
         };
         self.array[id] = Some(new_thread);
         if run_thread {
@@ -74,7 +70,7 @@ impl ThreadList {
     pub fn get_curr_thread(&mut self) -> Option<&mut Thread> {
         match self.curr_thread {
             Some(thread_id) => self.array.get_mut(thread_id).unwrap().as_mut(),
-            None => None
+            None => None,
         }
     }
 
@@ -83,7 +79,12 @@ impl ThreadList {
             if thread.next_thread.is_some() {
                 self.curr_thread = thread.next_thread;
             } else {
-                let (new_thread,_) = self.array.iter().enumerate().find(|(_,x)| x.is_some()).unwrap();
+                let (new_thread, _) = self
+                    .array
+                    .iter()
+                    .enumerate()
+                    .find(|(_, x)| x.is_some())
+                    .unwrap();
                 self.curr_thread = Some(new_thread);
             }
             Ok(self.curr_thread.unwrap())
@@ -92,11 +93,3 @@ impl ThreadList {
         }
     }
 }
-
-
-
-#[link_section = ".kernel.thread_array"]
-pub static mut THREADS: ThreadList = ThreadList {
-    array: [None;16],
-    curr_thread: None
-};

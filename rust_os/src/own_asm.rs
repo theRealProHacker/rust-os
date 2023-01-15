@@ -14,40 +14,35 @@ macro_rules! get_reg {
 
 #[inline(always)]
 pub fn demask_interrupts() {
-  unsafe{
-    asm!(
-      "MRS {reg}, CPSR",
-      "BIC {reg}, #(1<<7)",
-      "MSR CPSR, {reg}",
-      reg = out(reg) _
-    );
-  }
+    unsafe {
+        asm!(
+          "MRS {reg}, CPSR",
+          "BIC {reg}, #(1<<7)",
+          "MSR CPSR, {reg}",
+          reg = out(reg) _
+        );
+    }
 }
 
 #[inline(always)]
 pub fn mask_interrupts() {
-  unsafe{
-    asm!(
-    "MRS {r1}, CPSR",
-    "ORR {r1}, #(1<<7)",
-    "MSR CPSR, {r1}",
-    r1 = out(reg) _,
-    );
-  }
+    unsafe {
+        asm!(
+        "MRS {r1}, CPSR",
+        "ORR {r1}, #(1<<7)",
+        "MSR CPSR, {r1}",
+        r1 = out(reg) _,
+        );
+    }
 }
 
 #[macro_export]
 macro_rules! trampolin {
-    ($lr_offset:expr, $handler:ident) => (
+    ($lr_offset:expr, $handler:ident) => {
         unsafe {
-          asm!(
-            concat!("sub lr, ", $lr_offset),
-            "push  {{r0-r12, lr}}",
-          );
-          $handler();
-          asm!(
-            "pop    {{r0-r12, pc}}",
-          );
+            asm!(concat!("sub lr, ", $lr_offset), "push  {{r0-r12, lr}}",);
+            $handler();
+            asm!("pop    {{r0-r12, pc}}",);
         }
-    );
+    };
 }

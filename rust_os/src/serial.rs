@@ -1,5 +1,5 @@
 use core::fmt::Write;
-use volatile_register::{WO, RW, RO};
+use volatile_register::{RO, RW, WO};
 
 // consts
 pub const DBGU_ADDR: u32 = 0xFFFFF200;
@@ -24,7 +24,7 @@ pub struct Serial {
 impl Serial {
     #[inline(always)]
     pub fn new() -> &'static mut Serial {
-        unsafe {&mut *(DBGU_ADDR as *mut Serial)}
+        unsafe { &mut *(DBGU_ADDR as *mut Serial) }
     }
 
     #[inline(always)]
@@ -37,7 +37,9 @@ impl Serial {
 
     #[inline(always)]
     pub fn enable_interrupts(&mut self) {
-        unsafe{self.int_enable.write(RXRDY);}
+        unsafe {
+            self.int_enable.write(RXRDY);
+        }
     }
 
     /// Receive ready?
@@ -52,13 +54,13 @@ impl Serial {
         (self.status.read() & TXRDY) != 0
     }
 
-    /// Liest einen char 
+    /// Liest einen char
     #[inline(always)]
     pub fn read(&self) -> u8 {
         while !self.rx_ready() {}
         self.receive.read() as u8
     }
-    
+
     /// Schreibt einen char
     #[inline(always)]
     pub fn write(&self, char: u8) {
