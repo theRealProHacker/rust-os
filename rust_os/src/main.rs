@@ -98,11 +98,12 @@ extern "aapcs" fn src1_handler(_regs: *mut Registers) {
     match THREADS.get_curr_thread() {
         Some(thread) => {
             regs.clone_from(&thread.regs);
+
             interrupts::AIC::new().end_of_interrupt();
         }
         None => {
             interrupts::AIC::new().end_of_interrupt();
-            idle()
+            idle();
         }
     }
 }

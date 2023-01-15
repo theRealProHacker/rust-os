@@ -4,17 +4,11 @@
 _start:
     @ https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/how-to-load-constants-in-assembly-for-arm-architecture
     @ v1 is the moving stack pointer, v2 the individual stacksizes
-    @ v3 the moving cpsr, v4 the backup
+    @ v3 the moving cpsr
     mov v1, #0x24000000
     mov v2, #0x10000 @ 64kBv
-    @ sys & usr
-    mrs v4, cpsr
-    mov sp, v1
-    sub v1, v2
-    @ software interrupt
-    bic v3, v4, #0x1F
-    orr v3, #0x13
-    msr cpsr, v3
+    @ svc
+    mrs v3, cpsr
     mov sp, v1
     sub v1, v2
     @ undefined
@@ -35,15 +29,18 @@ _start:
     msr CPSR, v3
     mov sp, v1
     sub v1, v2
-    @ back to backup
-    msr CPSR, v4
+    @ sys & usr
+    orr v3, #0x1F
+    msr CPSR, v3
+    mov sp, v1
+    @ jump into rust
     b rust_start
 
 @ Note: mainly copied from beispiel
 .global _src1_handler
 _src1_handler:
     @ push everything onto the stack and pass the stack pointer to scr1_handler
-    @ sub	lr, #4
+    sub	lr, #4
  	stmfd sp!, {lr}
  
  	/*
