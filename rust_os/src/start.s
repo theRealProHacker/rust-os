@@ -50,9 +50,8 @@ _src1_handler:
  	 * Aufgrund des S-Bits ist kein Writeback möglich, also Platz auf Stack
  	 * manuell reservieren.
  	*/
- 	@ sub	sp, #(15*4)
- 	@ stmia sp, {r0-r14}^
-    push {r0-r14}
+ 	sub	sp, #(15*4)
+ 	stmia sp, {r0-r14}^
     
   	mov	r0, sp
  	bl	src1_handler
@@ -62,10 +61,9 @@ _src1_handler:
  	 * User-Modus). Laut Doku sollte in der Instruktion nach LDM^ auf
  	 * keines der umgeschalteten Register zugegriffen werden.
  	 */
- 	@ ldmia	sp, {r0-r14}^
- 	@ nop
- 	@ add	sp, sp, #(15*4)
-    pop {r0-r14}
+ 	ldmia	sp, {r0-r14}^
+ 	nop
+ 	add	sp, sp, #(15*4)
  
  	/* Rücksprung durch Laden des PC mit S-Bit */ 
  	ldmfd	sp!, {pc}^
