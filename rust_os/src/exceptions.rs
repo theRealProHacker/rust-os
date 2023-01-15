@@ -57,20 +57,20 @@ impl IVT {
 
 // handler
 extern "aapcs" fn dab_handler() {
-    print!("Data Abort");
     let a: u32;
     get_reg!(a = lr);
+    print!("Data Abort");
     let addr = super::memory_controller::get_abort_adress();
-    println!(" at {:X} accessing {addr:X}", a - 8);
+    println!(" at {:x} accessing {addr:x}", a - 8);
     loop {}
 }
 
 extern "aapcs" fn und_handler() {
-    print!("Undefined Instruction");
     let mut a: u32;
     get_reg!(a = lr);
+    print!("Undefined Instruction");
     let content = unsafe { read_volatile(((a - 8) - (a % 4)) as *const u32) };
-    println!(" at {content:X} ({:X}) ", a - 8);
+    println!(" at {content:x} ({:x}) ", a - 8);
     loop {}
 }
 
