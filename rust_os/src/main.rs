@@ -25,11 +25,7 @@ global_asm!(include_str!("start.s"), options(raw));
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     own_asm::mask_interrupts();
-    println!(
-        "\n Panicked\nmsg: {:?}\npayload: {:?}",
-        info.message(),
-        info.payload()
-    );
+    println!("\n Panicked: {info:?}");
     loop {}
 }
 
@@ -111,5 +107,4 @@ extern "aapcs" fn src1_handler(_regs: *mut Registers) {
             idle();
         }
     }
-    println!("__")
 }
