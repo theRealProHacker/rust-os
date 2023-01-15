@@ -11,7 +11,7 @@ pub static mut THREADS: ThreadList = ThreadList {
 };
 
 #[link_section = ".user_mem"]
-pub static USER_MEM: [u32; USER_MEM_SIZE] = [0; USER_MEM_SIZE];
+pub static USER_MEM: [u32; 0] = [0;0];
 
 type ID = usize;
 
