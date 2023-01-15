@@ -49,8 +49,9 @@ _src1_handler:
  	*/
  	sub	sp, #(15*4)
  	stmia sp, {r0-r14}^
-    
+
   	mov	r0, sp
+    bl _print_reg
  	bl	src1_handler
  
  	/*

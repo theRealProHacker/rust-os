@@ -96,3 +96,10 @@ macro_rules! print {
 pub fn _print(args: core::fmt::Arguments) {
     Serial::new().write_fmt(args).unwrap();
 }
+
+#[no_mangle]
+pub extern "aapcs" fn _print_reg(reg: u32) {
+    unsafe {
+        Serial::new().write_char(reg as u8 as char).unwrap_unchecked();
+    }
+}
