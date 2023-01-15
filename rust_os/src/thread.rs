@@ -1,7 +1,7 @@
 /// A register struct
 #[repr(C)]
 #[allow(dead_code)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Registers {
     pub r0: u32,
     pub r1: u32,
