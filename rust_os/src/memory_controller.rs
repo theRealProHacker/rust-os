@@ -1,5 +1,5 @@
 /// Einfach nur die Funktion, um das IVT schreiben zu enablen
-use core::ptr::{write_volatile, read_volatile};
+use core::ptr::{read_volatile, write_volatile};
 
 // p. 128
 const MEMORY_CONTROLLER: u32 = 0xFFFFFF00;
@@ -14,7 +14,5 @@ pub fn remap() {
 }
 
 pub fn get_abort_adress() -> u32 {
-    unsafe {
-        read_volatile((MEMORY_CONTROLLER+8) as *mut u32)
-    }
+    unsafe { read_volatile((MEMORY_CONTROLLER + 8) as *mut u32) }
 }

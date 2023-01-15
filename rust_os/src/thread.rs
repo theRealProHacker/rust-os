@@ -64,7 +64,12 @@ impl ThreadList {
         if run_thread {
             self.curr_thread = Some(id);
         } else {
-            self.array.get_mut(id-1).unwrap().as_mut().unwrap().next_thread = Some(id);
+            self.array
+                .get_mut(id - 1)
+                .unwrap()
+                .as_mut()
+                .unwrap()
+                .next_thread = Some(id);
         }
         Ok(id)
     }

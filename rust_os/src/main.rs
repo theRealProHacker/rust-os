@@ -16,7 +16,7 @@ mod serial;
 mod sys_timer;
 mod thread;
 mod util;
-use core::arch::{global_asm};
+use core::arch::global_asm;
 use registers::Registers;
 use util::{exit, idle, wait};
 
@@ -58,7 +58,7 @@ extern "aapcs" fn rust_start() -> ! {
     //         "bic r1, #0x1F",
     //         "orr r1, #0x10",
     //         "msr CPSR, r1",
-    //         out("r1") _, 
+    //         out("r1") _,
     //     );
     // }
     idle()
@@ -104,7 +104,6 @@ extern "aapcs" fn src1_handler(_regs: *mut Registers) {
     match THREADS.get_curr_thread() {
         Some(thread) => {
             regs.clone_from(&thread.regs);
-
             interrupts::AIC::new().end_of_interrupt();
         }
         None => {
@@ -112,4 +111,5 @@ extern "aapcs" fn src1_handler(_regs: *mut Registers) {
             idle();
         }
     }
+    println!("__")
 }
