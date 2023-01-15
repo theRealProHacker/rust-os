@@ -43,7 +43,7 @@ _start:
 .global _src1_handler
 _src1_handler:
     @ push everything onto the stack and pass the stack pointer to scr1_handler
-    sub	lr, #4
+    @ sub	lr, #4
  	stmfd sp!, {lr}
  
  	/*
