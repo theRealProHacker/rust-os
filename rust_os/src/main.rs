@@ -4,6 +4,7 @@
 #![feature(let_chains)]
 #![feature(asm_const)]
 #![feature(naked_functions)]
+#![feature(panic_info_message)]
 
 mod own_asm;
 mod exceptions;
@@ -24,7 +25,7 @@ global_asm!(include_str!("start.s"), options(raw));
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
   mask_interrupts();
-  println!("\n Panicked: {:?}", info);
+  println!("\n Panicked\nmsg: {:?}\npayload: {:?}", info.message(), info.payload());
   loop {}
 }
 
