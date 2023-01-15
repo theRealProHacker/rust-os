@@ -60,7 +60,7 @@ extern "aapcs" fn dab_handler() {
     let a: u32;
     get_reg!(a = lr);
     let addr = super::memory_controller::get_abort_adress();
-    println!("Data abort at {} accessing {addr}", a - 8);
+    println!("Data abort at {:X} accessing {addr:X}", a - 8);
     loop {}
 }
 
