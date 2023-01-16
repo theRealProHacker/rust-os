@@ -289,8 +289,9 @@ extern "aapcs" fn put_char_handler(c: u8) {
 
 extern "aapcs" fn read_char_handler() {
     get_threads().curr_mut_thread().state = WaitingForChar;
+    println!("Before: {:#?}", get_threads());
     get_threads().schedule_next();
-    println!("{:#?}", get_threads());
+    println!("After: {:#?}", get_threads());
 }
 
 static mut SWI_VECTORS: [u32; 5] = [0; 5];
