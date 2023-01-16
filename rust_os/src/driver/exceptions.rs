@@ -280,11 +280,12 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
         let code: SWICode = unsafe { core::mem::transmute(_code) };
         println!("Software interrupt: {code:?}");
         unsafe {
+            let func = SWI_VECTORS[_code as usize];
             asm!(
                 "mov lr, pc",
                 "add lr, #8",
                 "mov pc, {reg}",
-                reg = in(reg) SWI_VECTORS[_code as usize],
+                reg = in(reg) func,
                 in("r0") regs.r0,
             );
         }
