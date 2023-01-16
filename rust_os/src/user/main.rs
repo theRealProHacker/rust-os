@@ -11,6 +11,7 @@ fn thread_function(c: char) {
 
 #[no_mangle]
 fn main_thread() {
+    println!("Application start");
     loop {
         let char = read_char();
         println!("{char}");
