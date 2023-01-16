@@ -7,7 +7,7 @@ const USER_STACK_SIZE: usize = USER_MEM_SIZE / 2 / THREAD_NUMBER;
 #[link_section = ".kernel.thread_array"]
 pub static mut THREADS: ThreadList = ThreadList {
     array: [None; THREAD_NUMBER],
-    curr_thread: 0
+    curr_thread: 0,
 };
 
 #[link_section = ".user_mem"]
@@ -20,7 +20,7 @@ type PSR = u32;
 pub enum State {
     Running,
     Ready,
-    Sleeping(u32)
+    Sleeping(u32),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -50,7 +50,7 @@ impl ThreadList {
             Some((id, _)) => id,
             None => return Err("Can't create new thread. The list of threads is full."),
         };
-        let is_idle_thread = self.curr_thread==0 && self.get_thread(0).is_none();
+        let is_idle_thread = self.curr_thread == 0 && self.get_thread(0).is_none();
         regs.sp = (&USER_MEM as *const () as usize + USER_STACK_SIZE * (id + 1)) as u32;
         regs.lr = super::util::exit as u32;
         let new_thread = Thread {
@@ -103,17 +103,18 @@ impl ThreadList {
     }
 
     pub fn end_thread(&mut self, id: ID) {
-        if id == 0 {return}
+        if id == 0 {
+            return;
+        }
         self.schedule_next();
         self.array[id] = None;
     }
 }
 
 pub fn get_threads() -> &'static mut ThreadList {
-    unsafe {&mut THREADS}
+    unsafe { &mut THREADS }
 }
 
 pub fn save_state(regs: &mut Registers) {
     let threads = get_threads();
-    
 }

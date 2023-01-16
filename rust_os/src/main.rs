@@ -11,9 +11,9 @@ mod registers;
 mod thread;
 mod util;
 use core::arch::asm;
+use driver::*;
 use registers::Registers;
 use util::idle;
-use driver::*;
 
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
@@ -23,11 +23,13 @@ fn panic_handler(info: &core::panic::PanicInfo) -> ! {
 }
 
 #[naked]
+#[no_mangle]
 #[link_section = ".init"]
 extern "aapcs" fn _start() {
-    unsafe {asm!(
-        "@ v1 is the moving stack pointer, v2 the individual stacksizes, v3 the moving cpsr
-        mov v1, #0x24000000
+    unsafe {
+        asm!(
+            // @ v1 is the moving stack pointer, v2 the individual stacksizes, v3 the moving cpsr
+            "mov v1, #0x24000000
         mov v2, #0x10000 @ 64kB
         @ svc
         mrs v3, cpsr
@@ -57,8 +59,9 @@ extern "aapcs" fn _start() {
         mov sp, v1
         @ jump into rust
         b start",
-        options(noreturn)
-    )}
+            options(noreturn)
+        )
+    }
 }
 
 #[link_section = ".init"]

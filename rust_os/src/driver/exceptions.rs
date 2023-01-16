@@ -1,8 +1,11 @@
 use core::ptr::read_volatile;
 
-use crate::{get_reg, print, println, trampoline, thread, registers::Registers, get_psr, serial, sys_timer, util::wait, set_psr};
+use crate::{
+    get_psr, get_reg, print, println, registers::Registers, serial, set_psr, sys_timer, thread,
+    trampoline, util::wait,
+};
 use core::arch::asm;
-use volatile_register::{WO, RW, RO};
+use volatile_register::{RO, RW, WO};
 
 const IVT_ADDR: u32 = 0;
 const AIC_ADDR: u32 = 0xFFFFF000;
@@ -87,12 +90,7 @@ impl AIC {
 
     #[inline(always)]
     pub fn init(&mut self) {
-        self.set_handler(
-            1,
-            _src1_handler as u32,
-            0,
-            SrcType::LowLevelSens,
-        );
+        self.set_handler(1, _src1_handler as u32, 0, SrcType::LowLevelSens);
     }
 
     #[inline(always)]
@@ -129,7 +127,6 @@ impl AIC {
         crate::util::demask_interrupts();
     }
 }
-
 
 fn thread_function(c: char) {
     for _ in 0..20 {
@@ -182,8 +179,12 @@ extern "aapcs" fn dab_handler() {
 
 #[no_mangle]
 extern "aapcs" fn _dab_handler(regs: &mut Registers) {
-    println!("Data Abort at {:x} accessing {:x}", regs.lr, super::memory_controller::get_abort_adress());
-    let threads = unsafe { &mut thread::THREADS};
+    println!(
+        "Data Abort at {:x} accessing {:x}",
+        regs.lr,
+        super::memory_controller::get_abort_adress()
+    );
+    let threads = unsafe { &mut thread::THREADS };
     let id = threads.curr_thread;
     println!("Ending: {:?}", threads.get_thread(id));
     threads.end_thread(id);
