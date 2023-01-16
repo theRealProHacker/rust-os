@@ -93,5 +93,7 @@ extern "aapcs" fn start() -> ! {
     main_regs.pc = main_thread as u32;
     get_threads().create_thread(iregs).unwrap();
     get_threads().create_thread(main_regs).unwrap();
+    // hack to make idle be the running thread when we first get an interrupt
+    get_threads().curr_thread = 0;
     idle(); // we just wait for the first timer interrupt
 }
