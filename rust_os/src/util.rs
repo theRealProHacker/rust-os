@@ -40,6 +40,7 @@ macro_rules! get_reg {
 #[macro_export]
 macro_rules! get_psr {
     ($var:ident=$psr:ident) => (
+        let $var;
         unsafe {
           asm!(
             concat!("mrs {help}, ", stringify!($psr)),
@@ -83,4 +84,32 @@ pub fn mask_interrupts() {
         r1 = out(reg) _,
         );
     }
+}
+
+#[macro_export]
+macro_rules! trampoline {
+    ($handler:ident, $lr_offset:expr) => {
+        unsafe {
+            asm!(
+                // push everything onto the stack
+                concat!("sub	lr, ", $lr_offset),
+                "stmfd sp!, {lr}",
+                // Aufgrund des S-Bits ist kein Writeback möglich, also Platz auf Stack manuell reservieren
+                "sub	sp, #(15*4)",
+                "stmia sp, {r0-r14}^",
+                // pass the stack pointer
+                "mov r0, sp",
+                concat!("bl ", stringify!($handler)),
+                // Zuvor gesicherte Register wieder herstellen (R0-R12, R13-R14 im User-Modus).
+                // Laut Doku sollte in der Instruktion nach LDM^ aufkeines der umgeschalteten Register zugegriffen werden.
+                "ldmia	sp, {r0-r14}^
+                nop
+                add	sp, sp, #(15*4)
+            
+                /* Rücksprung durch Laden des PC mit S-Bit */ 
+                ldmfd	sp!, {pc}^",
+                options(noreturn, raw)
+            )
+        }
+    };
 }
