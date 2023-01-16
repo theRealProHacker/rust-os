@@ -272,7 +272,7 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
     let threads = get_threads();
     threads.save_state(regs);
     // ARM Documentation advises us to read the swi code from the instruction (8 or 24 bit imm)
-    let _code = unsafe { read((regs.lr - 4) as *const u32) as u8 };
+    let _code = unsafe { read((regs.pc - 4) as *const u32) as u8 };
     println!("swi: {_code}");
     if _code > 4 {
         exception_fault()
