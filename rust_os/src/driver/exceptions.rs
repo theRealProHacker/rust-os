@@ -174,17 +174,17 @@ enum ExceptionState {
     DAB,
     IRQ,
     SWI,
-    None
+    None,
 }
 
 static mut GLOBAL_EXC_STATE: ExceptionState = ExceptionState::None;
 
 fn get_exc_state() -> ExceptionState {
-    unsafe {GLOBAL_EXC_STATE}
+    unsafe { GLOBAL_EXC_STATE }
 }
 
 fn set_exc_state(state: ExceptionState) {
-    unsafe {GLOBAL_EXC_STATE = state}
+    unsafe { GLOBAL_EXC_STATE = state }
 }
 
 #[no_mangle]
@@ -209,19 +209,16 @@ extern "aapcs" fn src1_handler(regs: &mut Registers) {
         }
     } else if dbgu.status.read() & serial::RXRDY != 0 {
         let char = dbgu.read() as u32;
-        println!("Read char {}", char as u8 as char);
         for x in threads.array.iter_mut().filter(|x| x.is_some()) {
             let thread = x.as_mut().unwrap();
             thread.state = match thread.state {
                 WaitingForChar => {
-                    println!("Found {thread:?}");
                     thread.regs.r0 = char;
                     Ready
                 }
                 other => other,
             }
         }
-        println!("{threads:#?}");
     } else {
         println!("unknown interrupt")
     }
@@ -251,9 +248,11 @@ extern "aapcs" fn dab_handler(regs: &mut Registers) {
 extern "aapcs" fn und_handler(regs: &mut Registers) {
     mask_interrupts();
     let a = regs.lr;
-    println!("Undefined Instruction at {:x} ({a:x}) while in state {:?}", unsafe {
-        read((a - (a % 4)) as *const u32)
-    }, get_exc_state());
+    println!(
+        "Undefined Instruction at {:x} ({a:x}) while in state {:?}",
+        unsafe { read((a - (a % 4)) as *const u32) },
+        get_exc_state()
+    );
     set_exc_state(ExceptionState::UND);
     exception_fault();
     set_exc_state(ExceptionState::None);
@@ -292,7 +291,6 @@ extern "aapcs" fn put_char_handler(c: u8) {
 
 extern "aapcs" fn read_char_handler() {
     get_threads().curr_mut_thread().state = WaitingForChar;
-    println!("Before: {:#?}", get_threads());
     get_threads().schedule_next();
     println!("After: {:#?}", get_threads());
 }
@@ -310,6 +308,8 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
     if _code > 4 {
         exception_fault()
     } else {
+        let code: SWICode = unsafe { core::mem::transmute(_code) };
+        println!("Software interrupt: {code:?}");
         unsafe {
             let func = *(SWI_VECTORS.as_ptr().offset(_code as isize));
             asm!(
@@ -320,8 +320,6 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
                 in("r0") regs.r0,
             );
         }
-        let code: SWICode = unsafe { core::mem::transmute(_code) };
-        println!("Software interrupt: {code:?}");
     }
     threads.put_state(regs);
     set_exc_state(ExceptionState::None);

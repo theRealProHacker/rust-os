@@ -31,6 +31,7 @@ pub struct Thread {
     pub state: State,
     pub regs: Registers,
     pub psr: PSR,
+    #[allow(dead_code)]
     next_thread: Option<ID>,
 }
 
@@ -105,9 +106,9 @@ impl ThreadList {
 
     #[inline(always)]
     fn _schedule_next(&self) -> ID {
-        // First look into the slice after the current_thread
-        let start = self.curr_thread().next_thread;
-        if let Some(_start) = start && let Some(thread) = self.array[_start..].iter().find_map(|v| {
+        // First look into the slice after curr_thread
+        let start = self.curr_thread + 1;
+        if start<self.array.len() && let Some(thread) = self.array[start..].iter().find_map(|v| {
             v.as_ref().and_then(|thread| {
                 if thread.can_schedule() {
                     Some(thread)
@@ -130,7 +131,7 @@ impl ThreadList {
         }) {
             return thread.id;
         }
-        // Else return the idle thread
+        // else return the idle thread
         0
     }
 
@@ -164,9 +165,9 @@ impl ThreadList {
             println!("Ignored request to delete idle thread");
             return;
         } else if self.curr_thread == id {
+            self.array[id] = None;
             self.schedule_next();
         }
-        self.array[id] = None;
     }
 
     #[inline(always)]
