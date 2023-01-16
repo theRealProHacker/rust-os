@@ -277,8 +277,6 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
     if _code > 4 {
         exception_fault()
     } else {
-        let code: SWICode = unsafe { core::mem::transmute(_code) };
-        println!("Software interrupt: {code:?}");
         unsafe {
             let func = *(SWI_VECTORS.as_ptr().offset(_code as isize));
             asm!(
@@ -289,6 +287,8 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
                 in("r0") regs.r0,
             );
         }
+        let code: SWICode = unsafe { core::mem::transmute(_code) };
+        println!("Software interrupt: {code:?}");
     }
     threads.put_state(regs);
     demask_interrupts();
