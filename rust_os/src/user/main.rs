@@ -9,6 +9,7 @@ fn thread_function(c: char) {
     }
 }
 
+#[no_mangle]
 fn main_thread() {
     loop {
         let char = read_char();

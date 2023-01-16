@@ -16,6 +16,8 @@ use driver::*;
 use registers::Registers;
 use util::idle;
 
+use crate::thread::get_threads;
+
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     util::mask_interrupts();
@@ -68,6 +70,10 @@ extern "aapcs" fn _start() {
 const TIME_SLICE: u32 = 32768;
 const MS_PER_SLICE: u32 = TIME_SLICE * 1000 / 32768;
 
+extern {
+    fn main_thread();
+}
+
 #[link_section = ".init"]
 #[no_mangle]
 extern "aapcs" fn start() -> ! {
@@ -79,10 +85,12 @@ extern "aapcs" fn start() -> ! {
     println!("Initialized the sys timer with {MS_PER_SLICE} ms per slice");
     println!("Kernel start");
     // Create the idle thread
-    let mut regs = Registers::empty();
-    regs.pc = idle as u32;
-    unsafe {
-        thread::THREADS.create_thread(regs).unwrap();
-    }
+    let mut iregs = Registers::empty();
+    iregs.pc = idle as u32;
+    // Create the main thread
+    let mut main_regs = Registers::empty();
+    main_regs.pc = main_thread as u32;
+    get_threads().create_thread(iregs).unwrap();
+    get_threads().create_thread(main_regs).unwrap();
     idle(); // we just wait for the first timer interrupt
 }
