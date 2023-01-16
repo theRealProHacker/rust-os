@@ -112,7 +112,7 @@ extern "aapcs" fn src1_handler(_regs: u32) {
     };
     if timer.status.read() == 1 {
         println!("!");
-    } else if dbgu.status.read() == 1 {
+    } else if dbgu.status.read() & serial::RXRDY != 0 {
         let mut thread_regs = Registers::empty();
         thread_regs.r0 = dbgu.read() as u32;
         thread_regs.pc = thread_function as u32;
