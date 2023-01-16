@@ -198,6 +198,7 @@ extern "aapcs" fn src1_handler(regs: &mut Registers) {
                 other => other,
             }
         }
+        println!("{threads:#?}");
     } else {
         println!("unknown interrupt")
     }
@@ -268,6 +269,7 @@ static mut SWI_VECTORS: [u32; 5] = [0; 5];
 #[no_mangle]
 extern "aapcs" fn swi_handler(regs: &mut Registers) {
     mask_interrupts();
+    println!("swi");
     let threads = get_threads();
     threads.save_state(regs);
     // ARM Documentation advises us to read the swi code from the instruction (8 or 24 bit imm)
@@ -278,7 +280,7 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
         unsafe {
             let func = SWI_VECTORS[_code as usize];
             asm!(
-                "bx {reg}",
+                "mov pc, {reg}",
                 reg = in(reg) func,
                 in("r0") regs.r0,
             );

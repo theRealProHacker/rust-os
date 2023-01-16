@@ -44,6 +44,7 @@ impl Thread {
     }
 }
 
+#[derive(Debug)]
 pub struct ThreadList {
     pub array: [Option<Thread>; THREAD_NUMBER],
     pub curr_thread: ID,
@@ -62,7 +63,7 @@ impl ThreadList {
             Some((id, _)) => {
                 println!("Created new thread: {id}");
                 id
-            },
+            }
             None => return Err("Can't create new thread. The list of threads is full."),
         };
         regs.sp = (&USER_MEM as *const () as usize + USER_STACK_SIZE * (id + 1)) as u32;
