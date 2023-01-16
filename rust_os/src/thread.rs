@@ -59,7 +59,10 @@ impl ThreadList {
             .enumerate()
             .find(|(_, thread)| thread.is_none())
         {
-            Some((id, _)) => id,
+            Some((id, _)) => {
+                println!("Created new thread: {id}");
+                id
+            },
             None => return Err("Can't create new thread. The list of threads is full."),
         };
         regs.sp = (&USER_MEM as *const () as usize + USER_STACK_SIZE * (id + 1)) as u32;
@@ -86,7 +89,7 @@ impl ThreadList {
     }
 
     pub fn set_curr_thread(&mut self, id: ID) {
-        if let Some(old_thread) = self.get_mut_thread(id) {
+        if let Some(old_thread) = self.get_mut_thread(self.curr_thread) {
             old_thread.state = State::Ready
         }
         self.curr_thread = id;

@@ -248,8 +248,7 @@ extern "aapcs" fn exit_handler() {
 
 #[allow(improper_ctypes_definitions)]
 extern "aapcs" fn fork_handler(regs: &mut Registers) -> Option<ID> {
-    let threads = get_threads();
-    threads.create_thread(*regs).ok()
+    get_threads().create_thread(*regs).ok()
 }
 
 extern "aapcs" fn sleep_handler(ms: u32) {
@@ -271,7 +270,7 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
     mask_interrupts();
     let threads = get_threads();
     threads.save_state(regs);
-    // ARM Dokumentation advises us to read the swi code from the instruction (8 or 24 bit imm)
+    // ARM Documentation advises us to read the swi code from the instruction (8 or 24 bit imm)
     let _code = unsafe { read((regs.lr - 4) as *const u8) };
     if _code > 4 {
         exception_fault()
@@ -286,18 +285,6 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
         }
         let code: SWICode = unsafe { core::mem::transmute(_code) };
         println!("Software interrupt: {code:?}");
-        // match code {
-        //     Exit => threads.end_thread(threads.curr_thread),
-        //     Fork => {
-        //         match threads.create_thread(unsafe { *(regs.r0 as *mut Registers) }) {
-        //             Ok(id) => threads.curr_thread().regs.r0 = id as u32,
-        //             Err(msg) => threads.curr_thread().regs.r0 = Err(msg)
-        //         }
-        //     }
-        //     Sleep => threads.curr_thread().state = thread::State::Sleeping(regs.r0),
-        //     PutChar => println!("{}", regs.r0 as u8 as char),
-        //     ReadChar => threads.curr_thread().state = thread::State::WaitingForChar,
-        // }
     }
     threads.put_state(regs);
     demask_interrupts();
