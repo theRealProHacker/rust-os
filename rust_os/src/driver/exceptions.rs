@@ -280,6 +280,7 @@ extern "aapcs" fn fork_handler(regs: &mut Registers) -> Option<ID> {
 
 extern "aapcs" fn sleep_handler(ms: u32) {
     get_threads().curr_mut_thread().state = Sleeping(ms);
+    get_threads().schedule_next();
 }
 
 extern "aapcs" fn put_char_handler(c: u8) {
@@ -288,6 +289,8 @@ extern "aapcs" fn put_char_handler(c: u8) {
 
 extern "aapcs" fn read_char_handler() {
     get_threads().curr_mut_thread().state = WaitingForChar;
+    get_threads().schedule_next();
+    println!("{:?}", get_threads());
 }
 
 static mut SWI_VECTORS: [u32; 5] = [0; 5];
@@ -300,7 +303,6 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
     threads.save_state(regs);
     // ARM Documentation advises us to read the swi code from the instruction (8 bit imm)
     let _code = unsafe { read((regs.pc - 4) as *const u8) };
-    println!("swi: {_code}");
     if _code > 4 {
         exception_fault()
     } else {
