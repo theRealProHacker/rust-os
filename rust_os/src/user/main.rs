@@ -3,11 +3,11 @@ use crate::{println, registers::Registers};
 use super::syscalls::{fork, put_char, read_char, sleep};
 
 fn thread_function(c: char) {
-    println!("In thread: {c}");
-    // for _ in 0..20 {
-    //     put_char(c);
-    //     sleep(3000);
-    // }
+    println!("Child");
+    for _ in 0..20 {
+        put_char(c);
+        sleep(3000);
+    }
 }
 
 #[no_mangle]
