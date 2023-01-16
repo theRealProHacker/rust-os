@@ -1,5 +1,6 @@
 use core::arch::{arm::__nop, asm};
 
+#[allow(dead_code)]
 #[inline(always)]
 pub fn wait(x: u32) {
     for _ in 0..x {
@@ -20,14 +21,17 @@ pub fn idle() -> ! {
     }
 }
 
-#[inline(never)]
-pub fn exit() -> ! {
+/// Exits the currently running thread
+#[naked]
+#[no_mangle]
+pub extern "aapcs" fn exit() -> ! {
     unsafe { asm!("swi #0", options(noreturn)) }
 }
 
 #[macro_export]
 macro_rules! get_reg {
     ($var:ident=$reg:ident) => (
+        let $var: u32;
         unsafe {
           asm!(
             concat!("mov {reg}, ", stringify!($reg)),
@@ -86,6 +90,7 @@ pub fn mask_interrupts() {
     }
 }
 
+// Note: most copied from beispiel_4
 #[macro_export]
 macro_rules! trampoline {
     ($handler:ident, $lr_offset:expr) => {

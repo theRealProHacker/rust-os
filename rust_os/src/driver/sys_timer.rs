@@ -32,10 +32,10 @@ impl SysTimer {
 
     /// Sets the interval of the period clock
     #[inline(always)]
-    pub fn set_interval(&mut self, interval: u16) {
+    pub fn set_interval(&mut self, interval: u32) {
         // Clocked at 32768 Hz -> 32768 cycles = 1s
         // not affected by power management and slow clock mode
         // XXX: anything above 16 bits will be clipped
-        unsafe { self.interval_mode.write(interval as u32) }
+        unsafe { self.interval_mode.write(interval & u16::MAX as u32) }
     }
 }

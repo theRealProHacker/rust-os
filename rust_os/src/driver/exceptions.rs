@@ -1,8 +1,12 @@
-use core::ptr::read_volatile;
+use core::ptr::read;
 
 use crate::{
-    get_psr, get_reg, print, println, registers::Registers, serial, set_psr, sys_timer, thread,
-    trampoline, util::wait,
+    println,
+    registers::Registers,
+    serial, sys_timer,
+    thread::{get_threads, State::*, ID},
+    trampoline,
+    util::{demask_interrupts, idle, mask_interrupts},
 };
 use core::arch::asm;
 use volatile_register::{RO, RW, WO};
@@ -51,9 +55,16 @@ impl IVT {
             self.data_abort.write(ASM_AS_BYTES);
         }
         unsafe {
-            self.data_abort_handler.write(dab_handler);
-            self.undef_handler.write(und_handler);
+            self.data_abort_handler.write(_dab_handler);
+            self.undef_handler.write(_und_handler);
             self.swi_handler.write(_swi_handler);
+        }
+        unsafe {
+            SWI_VECTORS[0] = exit_handler as u32;
+            SWI_VECTORS[1] = fork_handler as u32;
+            SWI_VECTORS[2] = sleep_handler as u32;
+            SWI_VECTORS[3] = put_char_handler as u32;
+            SWI_VECTORS[4] = read_char_handler as u32;
         }
         self
     }
@@ -128,81 +139,19 @@ impl AIC {
     }
 }
 
-fn thread_function(c: char) {
-    for _ in 0..20 {
-        println!("{c}");
-        wait(500_000);
-    }
-}
-
 #[naked]
 extern "aapcs" fn _src1_handler() {
     trampoline!(src1_handler, 4)
 }
 
-#[no_mangle]
-extern "aapcs" fn src1_handler(regs: &mut Registers) {
-    let timer = sys_timer::SysTimer::new();
-    let dbgu = serial::Serial::new();
-    // Get a mutable reference to the static THREADS
-    let threads = thread::get_threads();
-    let thread = threads.get_curr_thread();
-    // Save the current state
-    thread.regs = regs.clone();
-    get_psr!(a = spsr);
-    thread.psr = a;
-    if timer.status.read() == 1 {
-        println!("!");
-    } else if dbgu.status.read() & serial::RXRDY != 0 {
-        let mut thread_regs = Registers::empty();
-        thread_regs.r0 = dbgu.read() as u32;
-        thread_regs.pc = thread_function as u32;
-        match threads.create_thread(thread_regs) {
-            Ok(id) => println!("Created thread {id}"),
-            Err(msg) => println!("{msg}"),
-        }
-    } else {
-        println!("unknown interrupt")
-    }
-    println!("Scheduled next thread: {}", threads.schedule_next());
-    let thread = threads.get_curr_thread();
-    regs.clone_from(&thread.regs);
-    let new_psr = thread.psr;
-    set_psr!(spsr = new_psr);
-    AIC::new().end_of_interrupt();
+#[naked]
+extern "aapcs" fn _dab_handler() {
+    trampoline!(dab_handler, 8)
 }
 
 #[naked]
-extern "aapcs" fn dab_handler() {
-    trampoline!(_dab_handler, 8)
-}
-
-#[no_mangle]
-extern "aapcs" fn _dab_handler(regs: &mut Registers) {
-    println!(
-        "Data Abort at {:x} accessing {:x}",
-        regs.lr,
-        super::memory_controller::get_abort_adress()
-    );
-    let threads = unsafe { &mut thread::THREADS };
-    let id = threads.curr_thread;
-    println!("Ending: {:?}", threads.get_thread(id));
-    threads.end_thread(id);
-    loop {}
-}
-#[naked]
-extern "aapcs" fn und_handler() {
-    trampoline!(_und_handler, 4)
-}
-
-#[no_mangle]
 extern "aapcs" fn _und_handler() {
-    let mut a: u32;
-    get_reg!(a = lr);
-    print!("Undefined Instruction");
-    let content = unsafe { read_volatile(((a - 8) - (a % 4)) as *const u32) };
-    println!(" at {content:x} ({:x}) ", a - 8);
-    loop {}
+    trampoline!(und_handler, 4)
 }
 
 #[naked]
@@ -210,7 +159,146 @@ extern "aapcs" fn _swi_handler() {
     trampoline!(swi_handler, 0)
 }
 
+/// A function that is called when someone messed up
+/// It ends the current user thread
+fn exception_fault() {
+    let threads = get_threads();
+    let id = threads.curr_thread;
+    println!("Ending: {:?}", threads.get_thread(id));
+    threads.end_thread(id);
+}
+
 #[no_mangle]
-extern "aapcs" fn swi_handler(_regs: u32) {
-    print!("Software interrupt\n");
+extern "aapcs" fn src1_handler(regs: &mut Registers) {
+    let timer = sys_timer::SysTimer::new();
+    let dbgu = serial::Serial::new();
+    let threads = get_threads();
+    threads.save_state(regs);
+    if timer.status.read() == 1 {
+        for mut thread in threads.array.iter_mut().filter_map(|&mut x| x) {
+            thread.state = match thread.state {
+                Sleeping(ms) => {
+                    // if we overflow (we go below zero), we set to Ready otherwise we remain Sleeping
+                    match ms.checked_sub(ms) {
+                        Some(new_ms) => Sleeping(new_ms),
+                        None => Ready,
+                    }
+                }
+                other => other,
+            }
+        }
+    } else if dbgu.status.read() & serial::RXRDY != 0 {
+        let char = dbgu.read() as u32;
+        for mut thread in threads.array.iter_mut().filter_map(|&mut x| x) {
+            thread.state = match thread.state {
+                WaitingForChar => {
+                    thread.regs.r0 = char;
+                    Ready
+                }
+                other => other,
+            }
+        }
+    } else {
+        println!("unknown interrupt")
+    }
+    println!("Scheduled next thread: {}", threads.schedule_next());
+    threads.put_state(regs);
+    AIC::new().end_of_interrupt();
+}
+
+#[no_mangle]
+extern "aapcs" fn dab_handler(regs: &mut Registers) {
+    mask_interrupts();
+    println!(
+        "Data Abort at {:x} accessing {:x}",
+        regs.lr,
+        super::memory_controller::get_abort_adress()
+    );
+    exception_fault();
+    demask_interrupts();
+    idle(); // just wait for timer interrupt
+}
+
+#[no_mangle]
+extern "aapcs" fn und_handler(regs: &mut Registers) {
+    mask_interrupts();
+    let a = regs.lr;
+    println!("Undefined Instruction at {:x} ({a:x}) ", unsafe {
+        read((a - (a % 4)) as *const u32)
+    });
+    exception_fault();
+    demask_interrupts();
+    idle();
+}
+
+#[derive(Debug)]
+pub enum SWICode {
+    #[allow(dead_code)]
+    Exit,
+    Fork,
+    Sleep,
+    PutChar,
+    ReadChar,
+}
+
+extern "aapcs" fn exit_handler() {
+    let threads = get_threads();
+    threads.end_thread(threads.curr_thread);
+}
+
+#[allow(improper_ctypes_definitions)]
+extern "aapcs" fn fork_handler(regs: &mut Registers) -> Option<ID> {
+    let threads = get_threads();
+    threads.create_thread(*regs).ok()
+}
+
+extern "aapcs" fn sleep_handler(ms: u32) {
+    get_threads().curr_thread().state = Sleeping(ms);
+}
+
+extern "aapcs" fn put_char_handler(c: u8) {
+    println!("{}", c as char);
+}
+
+extern "aapcs" fn read_char_handler() {
+    get_threads().curr_thread().state = WaitingForChar;
+}
+
+static mut SWI_VECTORS: [u32; 5] = [0; 5];
+
+#[no_mangle]
+extern "aapcs" fn swi_handler(regs: &mut Registers) {
+    mask_interrupts();
+    let threads = get_threads();
+    threads.save_state(regs);
+    // ARM Dokumentation advises us to read the swi code from the instruction (8 or 24 bit imm)
+    let _code = unsafe { read((regs.lr - 4) as *const u8) };
+    if _code > 4 {
+        exception_fault()
+    } else {
+        unsafe {
+            let func = SWI_VECTORS[_code as usize];
+            asm!(
+                "bx {reg}",
+                reg = in(reg) func,
+                in("r0") regs.r0,
+            );
+        }
+        let code: SWICode = unsafe { core::mem::transmute(_code) };
+        println!("Software interrupt: {code:?}");
+        // match code {
+        //     Exit => threads.end_thread(threads.curr_thread),
+        //     Fork => {
+        //         match threads.create_thread(unsafe { *(regs.r0 as *mut Registers) }) {
+        //             Ok(id) => threads.curr_thread().regs.r0 = id as u32,
+        //             Err(msg) => threads.curr_thread().regs.r0 = Err(msg)
+        //         }
+        //     }
+        //     Sleep => threads.curr_thread().state = thread::State::Sleeping(regs.r0),
+        //     PutChar => println!("{}", regs.r0 as u8 as char),
+        //     ReadChar => threads.curr_thread().state = thread::State::WaitingForChar,
+        // }
+    }
+    threads.put_state(regs);
+    demask_interrupts();
 }

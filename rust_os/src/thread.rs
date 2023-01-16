@@ -1,4 +1,5 @@
-use super::Registers;
+use crate::{set_psr, Registers};
+use core::arch::asm;
 
 const USER_MEM_SIZE: usize = 0x2_000_000 - 5 * 64 * 1024 - core::mem::size_of::<ThreadList>();
 const THREAD_NUMBER: usize = 16;
@@ -13,7 +14,7 @@ pub static mut THREADS: ThreadList = ThreadList {
 #[link_section = ".user_mem"]
 pub static USER_MEM: () = ();
 
-type ID = usize;
+pub type ID = usize;
 type PSR = u32;
 
 #[derive(Copy, Clone, Debug)]
@@ -21,6 +22,7 @@ pub enum State {
     Running,
     Ready,
     Sleeping(u32),
+    WaitingForChar,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -33,7 +35,7 @@ pub struct Thread {
 }
 
 pub struct ThreadList {
-    array: [Option<Thread>; THREAD_NUMBER],
+    pub array: [Option<Thread>; THREAD_NUMBER],
     pub curr_thread: ID,
 }
 
@@ -73,13 +75,12 @@ impl ThreadList {
         Ok(id)
     }
 
-    pub fn get_curr_thread(&mut self) -> &mut Thread {
+    pub fn curr_thread(&mut self) -> &mut Thread {
         self.get_thread(self.curr_thread).unwrap()
     }
 
     pub fn schedule_next(&mut self) -> ID {
-        // Wir haben immer einen current_thread
-        let thread = self.get_curr_thread();
+        let thread = self.curr_thread();
         if let Some(next_thread) = thread.next_thread {
             self.curr_thread = next_thread;
         } else {
@@ -105,16 +106,27 @@ impl ThreadList {
     pub fn end_thread(&mut self, id: ID) {
         if id == 0 {
             return;
+        } else if self.curr_thread == id {
+            self.schedule_next();
         }
-        self.schedule_next();
         self.array[id] = None;
+    }
+
+    pub fn save_state(&mut self, regs: &mut Registers) {
+        let thread = self.curr_thread();
+        thread.regs = regs.clone();
+        crate::get_psr!(a = spsr);
+        thread.psr = a;
+    }
+
+    pub fn put_state(&mut self, regs: &mut Registers) {
+        let thread = self.curr_thread();
+        regs.clone_from(&thread.regs);
+        let psr = thread.psr;
+        set_psr!(spsr = psr);
     }
 }
 
 pub fn get_threads() -> &'static mut ThreadList {
     unsafe { &mut THREADS }
-}
-
-pub fn save_state(regs: &mut Registers) {
-    let threads = get_threads();
 }
