@@ -1,6 +1,6 @@
 use core::ptr::read_volatile;
 
-use crate::{get_reg, print, println, trampolin};
+use crate::{get_reg, print, println};
 use core::arch::asm;
 use volatile_register::WO;
 
@@ -75,9 +75,5 @@ extern "aapcs" fn und_handler() {
 }
 
 extern "aapcs" fn swi_handler() {
-    trampolin!(0, _swi_handler);
-}
-
-fn _swi_handler() {
     print!("Software interrupt\n");
 }

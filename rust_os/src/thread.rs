@@ -11,9 +11,10 @@ pub static mut THREADS: ThreadList = ThreadList {
 };
 
 #[link_section = ".user_mem"]
-pub static USER_MEM: [u32; 0] = [0; 0];
+pub static USER_MEM: () = ();
 
 type ID = usize;
+type PSR = u32;
 
 #[derive(Copy, Clone)]
 enum State {
@@ -27,6 +28,7 @@ pub struct Thread {
     id: ID,
     state: State,
     pub regs: Registers,
+    pub psr: PSR,
     next_thread: Option<ID>,
 }
 
@@ -37,6 +39,7 @@ pub struct ThreadList {
 
 impl ThreadList {
     /// Add a thread to the thread_list. Returns a Result that contains the threads id.
+    /// The Registers pc and arguments need to be initialized beforehand
     pub fn create_thread(&mut self, mut regs: Registers) -> Result<ID, &'static str> {
         let id = match self
             .array
@@ -47,9 +50,9 @@ impl ThreadList {
             Some((id, _)) => id,
             None => return Err("Can't create new thread. The list of threads is full."),
         };
-        // Whether we should instantly run the thread
         let is_only_thread = self.get_curr_thread().is_none();
-        regs.sp = (USER_MEM.as_ptr() as usize + USER_STACK_SIZE * (id + 1)) as u32;
+        regs.sp = (&USER_MEM as *const () as usize + USER_STACK_SIZE * (id + 1)) as u32;
+        regs.lr = super::util::exit as u32;
         let new_thread = Thread {
             id,
             state: if is_only_thread {
@@ -57,6 +60,7 @@ impl ThreadList {
             } else {
                 State::Ready
             },
+            psr: 0x1F, // User Mode
             regs,
             next_thread: None,
         };
@@ -64,7 +68,7 @@ impl ThreadList {
         if is_only_thread {
             self.curr_thread = Some(id);
         } else {
-            self.get_thread(id-1).unwrap().next_thread = Some(id);
+            self.get_thread(id - 1).unwrap().next_thread = Some(id);
         }
         Ok(id)
     }
@@ -83,7 +87,7 @@ impl ThreadList {
             } else {
                 match self.idle_thread().next_thread {
                     Some(thread) => self.curr_thread = Some(thread),
-                    None => self.curr_thread = Some(0)
+                    None => self.curr_thread = Some(0),
                 }
             }
             Ok(self.curr_thread.unwrap())
@@ -95,7 +99,7 @@ impl ThreadList {
     pub fn get_thread(&mut self, id: ID) -> Option<&mut Thread> {
         match self.array.get_mut(id) {
             Some(element) => element.as_mut(),
-            None => None
+            None => None,
         }
     }
 

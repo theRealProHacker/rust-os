@@ -33,10 +33,10 @@ impl AIC {
 
     #[inline(always)]
     pub fn enable_interrupt(&mut self, index: u8) {
-        super::own_asm::demask_interrupts();
         unsafe {
             self.enable.write(1 << index);
         }
+        super::util::demask_interrupts();
     }
 
     /// Setzt den handler an [index] mit Priorität [prio] und Source Typ [src_type]
@@ -62,6 +62,6 @@ impl AIC {
     #[inline(always)]
     pub fn end_of_interrupt(&mut self) {
         unsafe { self.eoicr.write(1) }
-        super::own_asm::demask_interrupts();
+        super::util::demask_interrupts();
     }
 }

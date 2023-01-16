@@ -3,8 +3,7 @@
 .section .init
 _start:
     @ https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/how-to-load-constants-in-assembly-for-arm-architecture
-    @ v1 is the moving stack pointer, v2 the individual stacksizes
-    @ v3 the moving cpsr
+    @ v1 is the moving stack pointer, v2 the individual stacksizes, v3 the moving cpsr
     mov v1, #0x24000000
     mov v2, #0x10000 @ 64kB
     @ svc
@@ -50,8 +49,6 @@ _src1_handler:
  	sub	sp, #(15*4)
  	stmia sp, {r0-r14}^
 
-  	mov	r0, sp
-    bl _print_reg
     mov r0, sp
  	bl	src1_handler
  

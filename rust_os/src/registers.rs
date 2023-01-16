@@ -28,4 +28,4 @@ impl Registers {
     }
 }
 
-// TODO: Get Registers for a new thread with up to 12 arguments
+// TODO: Get Registers for a new thread with up to 4 arguments
