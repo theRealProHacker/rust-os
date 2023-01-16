@@ -281,7 +281,7 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
             let func = *(SWI_VECTORS.as_ptr().offset(_code as isize));
             asm!(
                 "mov lr, pc",
-                "add lr, #8",
+                "add lr, #4",
                 "mov pc, {reg}",
                 reg = in(reg) func,
                 in("r0") regs.r0,
