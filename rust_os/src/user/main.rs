@@ -1,4 +1,4 @@
-use crate::registers::Registers;
+use crate::{registers::Registers, println};
 
 use super::syscalls::{fork, put_char, read_char, sleep};
 
@@ -13,6 +13,7 @@ fn thread_function(c: char) {
 fn main_thread() {
     loop {
         let char = read_char();
+        println!("{char}");
         let regs = &mut Registers::empty();
         regs.r0 = char as u8 as u32;
         regs.pc = thread_function as u32;

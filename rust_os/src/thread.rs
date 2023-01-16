@@ -31,7 +31,6 @@ pub struct Thread {
     pub state: State,
     pub regs: Registers,
     pub psr: PSR,
-    // TODO: make ThreadList iterable over links
     next_thread: Option<ID>,
 }
 
@@ -50,6 +49,7 @@ pub struct ThreadList {
     pub curr_thread: ID,
 }
 
+// TODO: make ThreadList iterable over links
 impl ThreadList {
     /// Add a thread to the ThreadList. Returns a Result that contains the threads id.
     /// The Registers pc and arguments need to be initialized beforehand
