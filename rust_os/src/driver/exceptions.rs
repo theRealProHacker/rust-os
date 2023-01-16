@@ -209,9 +209,11 @@ extern "aapcs" fn src1_handler(regs: &mut Registers) {
         }
     } else if dbgu.status.read() & serial::RXRDY != 0 {
         let char = dbgu.read() as u32;
+        println!("Read char {}", char as u8 as char);
         for mut thread in threads.array.iter_mut().filter_map(|&mut x| x) {
             thread.state = match thread.state {
                 WaitingForChar => {
+                    println!("Found {thread:?}");
                     thread.regs.r0 = char;
                     Ready
                 }
