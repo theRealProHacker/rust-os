@@ -38,6 +38,7 @@ impl Thread {
     pub fn can_schedule(&self) -> bool {
         match self.state {
             State::Ready => self.id != 0,
+            State::Running => self.id != 0,
             _ => false,
         }
     }
@@ -100,22 +101,26 @@ impl ThreadList {
     fn _schedule_next(&self) -> ID {
         // First look into the slice after the current_thread
         let start = self.curr_thread().next_thread;
-        if let Some(_start) = start && let Some(thread) = self.array[_start..].iter().find_map(|v| match v.as_ref() {
-            Some(thread) => if thread.can_schedule() {Some(thread)} else {None},
-            None => None
-        }) {
-            return thread.id
-        }
-        // Now look through the whole list
-        if let Some(thread) = self.array.iter().find_map(|v| match v.as_ref() {
-            Some(thread) => {
+        if let Some(_start) = start && let Some(thread) = self.array[_start..].iter().find_map(|v| {
+            v.as_ref().and_then(|thread| {
                 if thread.can_schedule() {
                     Some(thread)
                 } else {
                     None
                 }
-            }
-            None => None,
+            })
+        }) {
+            return thread.id
+        }
+        // Now look through the whole list
+        if let Some(thread) = self.array.iter().find_map(|v| {
+            v.as_ref().and_then(|thread| {
+                if thread.can_schedule() {
+                    Some(thread)
+                } else {
+                    None
+                }
+            })
         }) {
             return thread.id;
         }

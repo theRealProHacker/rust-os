@@ -1,4 +1,4 @@
-use crate::{registers::Registers, println};
+use crate::{println, registers::Registers};
 
 use super::syscalls::{fork, put_char, read_char, sleep};
 
