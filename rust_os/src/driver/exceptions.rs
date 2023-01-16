@@ -168,8 +168,28 @@ fn exception_fault() {
     threads.end_thread(id);
 }
 
+#[derive(Debug, Clone, Copy)]
+enum ExceptionState {
+    UND,
+    DAB,
+    IRQ,
+    SWI,
+    None
+}
+
+static mut GLOBAL_EXC_STATE: ExceptionState = ExceptionState::None;
+
+fn get_exc_state() -> ExceptionState {
+    unsafe {GLOBAL_EXC_STATE}
+}
+
+fn set_exc_state(state: ExceptionState) {
+    unsafe {GLOBAL_EXC_STATE = state}
+}
+
 #[no_mangle]
 extern "aapcs" fn src1_handler(regs: &mut Registers) {
+    set_exc_state(ExceptionState::IRQ);
     let timer = sys_timer::SysTimer::new();
     let dbgu = serial::Serial::new();
     let threads = get_threads();
@@ -204,6 +224,7 @@ extern "aapcs" fn src1_handler(regs: &mut Registers) {
     }
     println!("Scheduled next thread: {}", threads.schedule_next());
     threads.put_state(regs);
+    set_exc_state(ExceptionState::None);
     AIC::new().end_of_interrupt();
 }
 
@@ -211,11 +232,14 @@ extern "aapcs" fn src1_handler(regs: &mut Registers) {
 extern "aapcs" fn dab_handler(regs: &mut Registers) {
     mask_interrupts();
     println!(
-        "Data Abort at {:x} accessing {:x}",
+        "Data Abort at {:x} accessing {:x} while in state {:?}",
         regs.lr,
-        super::memory_controller::get_abort_adress()
+        super::memory_controller::get_abort_adress(),
+        get_exc_state()
     );
+    set_exc_state(ExceptionState::DAB);
     exception_fault();
+    set_exc_state(ExceptionState::None);
     demask_interrupts();
     idle(); // just wait for timer interrupt
 }
@@ -224,10 +248,12 @@ extern "aapcs" fn dab_handler(regs: &mut Registers) {
 extern "aapcs" fn und_handler(regs: &mut Registers) {
     mask_interrupts();
     let a = regs.lr;
-    println!("Undefined Instruction at {:x} ({a:x}) ", unsafe {
+    println!("Undefined Instruction at {:x} ({a:x}) while in state {:?}", unsafe {
         read((a - (a % 4)) as *const u32)
-    });
+    }, get_exc_state());
+    set_exc_state(ExceptionState::UND);
     exception_fault();
+    set_exc_state(ExceptionState::None);
     demask_interrupts();
     idle();
 }
@@ -269,6 +295,7 @@ static mut SWI_VECTORS: [u32; 5] = [0; 5];
 #[no_mangle]
 extern "aapcs" fn swi_handler(regs: &mut Registers) {
     mask_interrupts();
+    set_exc_state(ExceptionState::SWI);
     let threads = get_threads();
     threads.save_state(regs);
     // ARM Documentation advises us to read the swi code from the instruction (8 bit imm)
@@ -291,5 +318,6 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
         println!("Software interrupt: {code:?}");
     }
     threads.put_state(regs);
+    set_exc_state(ExceptionState::None);
     demask_interrupts();
 }
