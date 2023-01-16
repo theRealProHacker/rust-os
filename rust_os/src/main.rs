@@ -5,6 +5,7 @@
 #![feature(asm_const)]
 #![feature(naked_functions)]
 #![feature(panic_info_message)]
+#![feature(is_some_and)]
 
 mod driver;
 mod registers;
@@ -70,7 +71,7 @@ extern "aapcs" fn _start() {
 const TIME_SLICE: u32 = 32768;
 const MS_PER_SLICE: u32 = TIME_SLICE * 1000 / 32768;
 
-extern {
+extern "C" {
     fn main_thread();
 }
 

@@ -1,4 +1,4 @@
-use crate::{set_psr, Registers};
+use crate::{println, set_psr, Registers};
 use core::arch::asm;
 
 const USER_MEM_SIZE: usize = 0x2_000_000 - 5 * 64 * 1024 - core::mem::size_of::<ThreadList>();
@@ -31,7 +31,17 @@ pub struct Thread {
     pub state: State,
     pub regs: Registers,
     pub psr: PSR,
+    // TODO: make ThreadList iterable over links
     next_thread: Option<ID>,
+}
+
+impl Thread {
+    pub fn can_schedule(&self) -> bool {
+        match self.state {
+            State::Ready => self.id != 0,
+            _ => false,
+        }
+    }
 }
 
 pub struct ThreadList {
@@ -52,59 +62,87 @@ impl ThreadList {
             Some((id, _)) => id,
             None => return Err("Can't create new thread. The list of threads is full."),
         };
-        let is_idle_thread = self.curr_thread == 0 && self.get_thread(0).is_none();
         regs.sp = (&USER_MEM as *const () as usize + USER_STACK_SIZE * (id + 1)) as u32;
         regs.lr = super::util::exit as u32;
         let new_thread = Thread {
             id,
-            state: if is_idle_thread {
-                State::Running
-            } else {
-                State::Ready
-            },
+            state: State::Ready,
             psr: 0x1F, // User Mode
             regs,
             next_thread: None,
         };
         self.array[id] = Some(new_thread);
-        if is_idle_thread {
-            self.curr_thread = id;
-        } else {
-            self.get_thread(id - 1).unwrap().next_thread = Some(id);
-        }
+        // newly created threads get a headstart -> could lead to exploitation
+        self.set_curr_thread(id);
         Ok(id)
     }
 
-    pub fn curr_thread(&mut self) -> &mut Thread {
+    pub fn curr_thread(&self) -> &Thread {
         self.get_thread(self.curr_thread).unwrap()
     }
 
-    pub fn schedule_next(&mut self) -> ID {
-        let thread = self.curr_thread();
-        if let Some(next_thread) = thread.next_thread {
-            self.curr_thread = next_thread;
-        } else {
-            match self.idle_thread().next_thread {
-                Some(thread) => self.curr_thread = thread,
-                None => self.curr_thread = 0,
-            }
-        }
-        self.curr_thread
+    pub fn curr_mut_thread(&mut self) -> &mut Thread {
+        self.get_mut_thread(self.curr_thread).unwrap()
     }
 
-    pub fn get_thread(&mut self, id: ID) -> Option<&mut Thread> {
+    pub fn set_curr_thread(&mut self, id: ID) {
+        if let Some(old_thread) = self.get_mut_thread(id) {
+            old_thread.state = State::Ready
+        }
+        self.curr_thread = id;
+        self.curr_mut_thread().state = State::Running
+    }
+
+    fn _schedule_next(&self) -> ID {
+        // First look into the slice after the current_thread
+        let start = self.curr_thread().next_thread;
+        if let Some(_start) = start && let Some(thread) = self.array[_start..].iter().find_map(|v| match v.as_ref() {
+            Some(thread) => if thread.can_schedule() {Some(thread)} else {None},
+            None => None
+        }) {
+            return thread.id
+        }
+        // Now look through the whole list
+        if let Some(thread) = self.array.iter().find_map(|v| match v.as_ref() {
+            Some(thread) => {
+                if thread.can_schedule() {
+                    Some(thread)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }) {
+            return thread.id;
+        }
+        // Else return the idle thread
+        0
+    }
+
+    /// Schedules the next thread to run
+    pub fn schedule_next(&mut self) -> ID {
+        let id = self._schedule_next();
+        self.set_curr_thread(id);
+        id
+    }
+
+    pub fn get_thread(&self, id: ID) -> Option<&Thread> {
+        match self.array.get(id) {
+            Some(element) => element.as_ref(),
+            None => None,
+        }
+    }
+
+    pub fn get_mut_thread(&mut self, id: ID) -> Option<&mut Thread> {
         match self.array.get_mut(id) {
             Some(element) => element.as_mut(),
             None => None,
         }
     }
 
-    pub fn idle_thread(&mut self) -> &Thread {
-        self.get_thread(0).unwrap()
-    }
-
     pub fn end_thread(&mut self, id: ID) {
         if id == 0 {
+            println!("Ignored request to delete idle thread");
             return;
         } else if self.curr_thread == id {
             self.schedule_next();
@@ -113,7 +151,7 @@ impl ThreadList {
     }
 
     pub fn save_state(&mut self, regs: &mut Registers) {
-        let thread = self.curr_thread();
+        let thread = self.curr_mut_thread();
         thread.regs = regs.clone();
         crate::get_psr!(a = spsr);
         thread.psr = a;

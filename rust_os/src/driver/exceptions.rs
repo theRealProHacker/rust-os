@@ -253,7 +253,7 @@ extern "aapcs" fn fork_handler(regs: &mut Registers) -> Option<ID> {
 }
 
 extern "aapcs" fn sleep_handler(ms: u32) {
-    get_threads().curr_thread().state = Sleeping(ms);
+    get_threads().curr_mut_thread().state = Sleeping(ms);
 }
 
 extern "aapcs" fn put_char_handler(c: u8) {
@@ -261,7 +261,7 @@ extern "aapcs" fn put_char_handler(c: u8) {
 }
 
 extern "aapcs" fn read_char_handler() {
-    get_threads().curr_thread().state = WaitingForChar;
+    get_threads().curr_mut_thread().state = WaitingForChar;
 }
 
 static mut SWI_VECTORS: [u32; 5] = [0; 5];
