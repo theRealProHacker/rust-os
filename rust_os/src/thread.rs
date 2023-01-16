@@ -65,13 +65,11 @@ impl ThreadList {
             .find(|(_, thread)| thread.is_none())
         {
             Some((id, _)) => {
-                println!("Created new thread: {id}");
                 id
             }
             None => return Err("Can't create new thread. The list of threads is full."),
         };
         regs.sp = (&USER_MEM as *const () as usize + USER_STACK_SIZE * (id + 1)) as u32;
-        regs.lr = super::util::exit as u32;
         let new_thread = Thread {
             id,
             state: State::Ready,
@@ -82,6 +80,7 @@ impl ThreadList {
         self.array[id] = Some(new_thread);
         // newly created threads get a headstart -> could lead to exploitation
         self.set_curr_thread(id);
+        println!("Created new thread: {id}");
         Ok(id)
     }
 
