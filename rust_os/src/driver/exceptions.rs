@@ -269,19 +269,18 @@ static mut SWI_VECTORS: [u32; 5] = [0; 5];
 #[no_mangle]
 extern "aapcs" fn swi_handler(regs: &mut Registers) {
     mask_interrupts();
-    println!("swi");
     let threads = get_threads();
     threads.save_state(regs);
     // ARM Documentation advises us to read the swi code from the instruction (8 or 24 bit imm)
     let _code = unsafe { read((regs.lr - 4) as *const u8) };
+    println!("swi: {_code}");
     if _code > 4 {
         exception_fault()
     } else {
         unsafe {
-            let func = SWI_VECTORS[_code as usize];
             asm!(
                 "mov pc, {reg}",
-                reg = in(reg) func,
+                reg = in(reg) SWI_VECTORS[_code as usize],
                 in("r0") regs.r0,
             );
         }
