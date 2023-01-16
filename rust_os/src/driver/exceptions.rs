@@ -271,12 +271,14 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
     mask_interrupts();
     let threads = get_threads();
     threads.save_state(regs);
-    // ARM Documentation advises us to read the swi code from the instruction (8 or 24 bit imm)
-    let _code = unsafe { read((regs.pc - 4) as *const u32) as u8 };
+    // ARM Documentation advises us to read the swi code from the instruction (8 bit imm)
+    let _code = unsafe { read((regs.pc - 4) as *const u8) };
     println!("swi: {_code}");
     if _code > 4 {
         exception_fault()
     } else {
+        let code: SWICode = unsafe { core::mem::transmute(_code) };
+        println!("Software interrupt: {code:?}");
         unsafe {
             asm!(
                 "mov pc, {reg}",
@@ -284,8 +286,6 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
                 in("r0") regs.r0,
             );
         }
-        let code: SWICode = unsafe { core::mem::transmute(_code) };
-        println!("Software interrupt: {code:?}");
     }
     threads.put_state(regs);
     demask_interrupts();
