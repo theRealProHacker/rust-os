@@ -35,6 +35,7 @@ pub struct Thread {
 }
 
 impl Thread {
+    #[inline(always)]
     pub fn can_schedule(&self) -> bool {
         match self.state {
             State::Ready => self.id != 0,
@@ -54,6 +55,7 @@ pub struct ThreadList {
 impl ThreadList {
     /// Add a thread to the ThreadList. Returns a Result that contains the threads id.
     /// The Registers pc and arguments need to be initialized beforehand
+    #[inline(always)]
     pub fn create_thread(&mut self, mut regs: Registers) -> Result<ID, &'static str> {
         let id = match self
             .array
@@ -82,14 +84,17 @@ impl ThreadList {
         Ok(id)
     }
 
+    #[inline(always)]
     pub fn curr_thread(&self) -> &Thread {
         self.get_thread(self.curr_thread).unwrap()
     }
 
+    #[inline(always)]
     pub fn curr_mut_thread(&mut self) -> &mut Thread {
         self.get_mut_thread(self.curr_thread).unwrap()
     }
 
+    #[inline(always)]
     pub fn set_curr_thread(&mut self, id: ID) {
         if let Some(old_thread) = self.get_mut_thread(self.curr_thread) {
             old_thread.state = State::Ready
@@ -98,6 +103,7 @@ impl ThreadList {
         self.curr_mut_thread().state = State::Running
     }
 
+    #[inline(always)]
     fn _schedule_next(&self) -> ID {
         // First look into the slice after the current_thread
         let start = self.curr_thread().next_thread;
@@ -129,12 +135,14 @@ impl ThreadList {
     }
 
     /// Schedules the next thread to run
+    #[inline(always)]
     pub fn schedule_next(&mut self) -> ID {
         let id = self._schedule_next();
         self.set_curr_thread(id);
         id
     }
 
+    #[inline(always)]
     pub fn get_thread(&self, id: ID) -> Option<&Thread> {
         match self.array.get(id) {
             Some(element) => element.as_ref(),
@@ -142,6 +150,7 @@ impl ThreadList {
         }
     }
 
+    #[inline(always)]
     pub fn get_mut_thread(&mut self, id: ID) -> Option<&mut Thread> {
         match self.array.get_mut(id) {
             Some(element) => element.as_mut(),
@@ -149,6 +158,7 @@ impl ThreadList {
         }
     }
 
+    #[inline(always)]
     pub fn end_thread(&mut self, id: ID) {
         if id == 0 {
             println!("Ignored request to delete idle thread");
@@ -159,6 +169,7 @@ impl ThreadList {
         self.array[id] = None;
     }
 
+    #[inline(always)]
     pub fn save_state(&mut self, regs: &mut Registers) {
         let thread = self.curr_mut_thread();
         thread.regs = regs.clone();
@@ -166,6 +177,7 @@ impl ThreadList {
         thread.psr = a;
     }
 
+    #[inline(always)]
     pub fn put_state(&mut self, regs: &mut Registers) {
         let thread = self.curr_thread();
         regs.clone_from(&thread.regs);
@@ -174,6 +186,7 @@ impl ThreadList {
     }
 }
 
+#[inline(always)]
 pub fn get_threads() -> &'static mut ThreadList {
     unsafe { &mut THREADS }
 }

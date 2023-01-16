@@ -281,7 +281,7 @@ extern "aapcs" fn swi_handler(regs: &mut Registers) {
         println!("Software interrupt: {code:?}");
         unsafe {
             asm!(
-                "mov pc, {reg}",
+                "bl [{reg}]",
                 reg = in(reg) SWI_VECTORS[_code as usize],
                 in("r0") regs.r0,
             );
