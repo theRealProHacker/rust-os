@@ -17,7 +17,7 @@ pub static USER_MEM: () = ();
 pub type ID = usize;
 type PSR = u32;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum State {
     Running,
     Ready,
@@ -96,7 +96,7 @@ impl ThreadList {
 
     #[inline(always)]
     pub fn set_curr_thread(&mut self, id: ID) {
-        if let Some(old_thread) = self.get_mut_thread(self.curr_thread) {
+        if let Some(old_thread) = self.get_mut_thread(self.curr_thread) && old_thread.state == State::Running {
             old_thread.state = State::Ready
         }
         self.curr_thread = id;
