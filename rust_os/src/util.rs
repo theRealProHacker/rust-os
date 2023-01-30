@@ -1,29 +1,33 @@
+//! All kinds of utilities that have not yet found a right place
+//!
+//! e.g. Makros, simple inlined assembly instructions and the Registers struct
+
 use core::arch::{arm::__nop, asm};
 
+#[inline(always)]
+pub fn nop() {
+    unsafe { __nop() }
+}
+
+/// Waits the given number of cpu cycles
 #[allow(dead_code)]
 #[inline(always)]
 pub fn wait(x: u32) {
     for _ in 0..x {
-        unsafe {
-            __nop();
-        }
+        nop()
     }
 }
 
+/// Just does nothing
 #[inline(always)]
 pub fn idle() -> ! {
     loop {
-        unsafe {
-            // wait for interrupt
-            // asm!("mcr	p15, 0, r0, c7, c0, 4")
-            asm!("nop")
-        }
+        nop()
     }
 }
 
 /// Exits the currently running thread
 #[naked]
-#[no_mangle]
 pub extern "aapcs" fn exit() -> ! {
     unsafe { asm!("swi #0", options(noreturn)) }
 }
@@ -33,10 +37,7 @@ macro_rules! get_reg {
     ($var:ident=$reg:ident) => (
         let $var: u32;
         unsafe {
-          asm!(
-            concat!("mov {reg}, ", stringify!($reg)),
-            reg = out(reg) $var,
-          );
+          asm!(concat!("mov {}, ", stringify!($reg)), out(reg) $var);
         }
     );
 }
@@ -44,7 +45,7 @@ macro_rules! get_reg {
 #[macro_export]
 macro_rules! get_psr {
     ($var:ident=$psr:ident) => (
-        let $var;
+        let $var: u32;
         unsafe {
           asm!(
             concat!("mrs {help}, ", stringify!($psr)),
@@ -90,31 +91,124 @@ pub fn mask_interrupts() {
     }
 }
 
-// Note: most copied from beispiel_4
+// Note: most of this is stolen from beispiel_4
 #[macro_export]
 macro_rules! trampoline {
-    ($handler:ident, $lr_offset:expr) => {
-        unsafe {
-            asm!(
-                // push everything onto the stack
-                concat!("sub	lr, ", $lr_offset),
-                "stmfd sp!, {lr}",
-                // Aufgrund des S-Bits ist kein Writeback möglich, also Platz auf Stack manuell reservieren
-                "sub	sp, #(15*4)",
-                "stmia sp, {r0-r14}^",
-                // pass the stack pointer
-                "mov r0, sp",
-                concat!("bl ", stringify!($handler)),
-                // Zuvor gesicherte Register wieder herstellen (R0-R12, R13-R14 im User-Modus).
-                // Laut Doku sollte in der Instruktion nach LDM^ aufkeines der umgeschalteten Register zugegriffen werden.
-                "ldmia	sp, {r0-r14}^
-                nop
-                add	sp, sp, #(15*4)
-            
-                /* Rücksprung durch Laden des PC mit S-Bit */ 
-                ldmfd	sp!, {pc}^",
-                options(noreturn, raw)
-            )
+    ($name:ident=>$handler:ident@$lr_offset:expr) => {
+        #[naked]
+        pub extern "aapcs" fn $name() {
+            unsafe {
+                asm!(
+                    // push everything onto the stack
+                    concat!("sub lr, ", $lr_offset),
+                    "stmfd sp!, {{lr}}",
+                    // Aufgrund des S-Bits ist kein Writeback möglich, also Platz auf Stack manuell reservieren
+                    "sub	sp, #(15*4)",
+                    "stmia sp, {{r0-r14}}^",
+                    // pass the stack pointer
+                    "mov r0, sp",
+                    "bl {handler}",
+                    // Zuvor gesicherte Register wieder herstellen (R0-R12, R13-R14 im User-Modus).
+                    // Laut Doku sollte in der Instruktion nach LDM^ auf
+                    // keines der umgeschalteten Register zugegriffen werden.
+                    "ldmia	sp, {{r0-r14}}^
+                    nop
+                    add	sp, sp, #(15*4)
+                
+                    /* Rücksprung durch Laden des PC mit S-Bit */ 
+                    ldmfd	sp!, {{pc}}^",
+                    handler = sym $handler,
+                    options(noreturn)
+                )
+            }
         }
     };
+}
+
+/// A register struct
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct Registers {
+    pub r0: u32,
+    pub r1: u32,
+    pub r2: u32,
+    pub r3: u32,
+    pub r4: u32,
+    pub r5: u32,
+    pub r6: u32,
+    pub r7: u32,
+    pub r8: u32,
+    pub r9: u32,
+    pub r10: u32,
+    pub r11: u32,
+    pub r12: u32,
+    pub sp: u32,
+    pub lr: u32,
+    pub pc: u32,
+}
+
+impl Registers {
+    /// Generates empty registers initialized at 0
+    pub fn empty() -> Registers {
+        Registers {
+            r0: 0,
+            r1: 0,
+            r2: 0,
+            r3: 0,
+            r4: 0,
+            r5: 0,
+            r6: 0,
+            r7: 0,
+            r8: 0,
+            r9: 0,
+            r10: 0,
+            r11: 0,
+            r12: 0,
+            sp: 0,
+            lr: 0,
+            pc: 0,
+        }
+    }
+}
+
+/// This macro helps to generate the correct registers.
+/// Given a function-call like input it will make registers that if executed as a thread will
+/// give the same result as if the given function was actually called
+#[macro_export]
+macro_rules! thread {
+    ($func:ident()) => {{
+        let mut regs = Registers::empty();
+        regs.pc = $func as u32;
+        regs
+    }};
+    ($func:ident($arg1:expr)) => {{
+        let mut regs = Registers::empty();
+        regs.pc = $func as u32;
+        regs.r0 = $arg1 as u32;
+        regs
+    }};
+    ($func:ident($arg1:expr,$arg2:expr)) => {{
+        let mut regs = Registers::empty();
+        regs.pc = $func as u32;
+        regs.r0 = $arg1 as u32;
+        regs.r1 = $arg2 as u32;
+        regs
+    }};
+    ($func:ident($arg1:expr, $arg2:expr, $arg3:expr)) => {{
+        let mut regs = Registers::empty();
+        regs.pc = $func as u32;
+        regs.r0 = $arg1 as u32;
+        regs.r1 = $arg2 as u32;
+        regs.r2 = $arg3 as u32;
+        regs
+    }};
+    ($func:ident($arg1:expr, $arg2:expr, $arg3:expr, $arg4:expr)) => {{
+        let mut regs = Registers::empty();
+        regs.pc = $func as u32;
+        regs.r0 = $arg1 as u32;
+        regs.r1 = $arg2 as u32;
+        regs.r2 = $arg3 as u32;
+        regs.r3 = $arg4 as u32;
+        regs
+    }};
 }

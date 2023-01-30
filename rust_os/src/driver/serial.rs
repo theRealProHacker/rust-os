@@ -1,3 +1,7 @@
+//! Beschreibt die grundsätzliche Struktur einer seriellen Schnittstelle
+//! Ist aber auf die DBGU (Debug-Unit) zugeschnitten
+//! Input ist interrupt getrieben aufgebaut
+
 use core::fmt::Write;
 use volatile_register::{RO, RW, WO};
 
@@ -98,6 +102,6 @@ pub fn _print(args: core::fmt::Arguments) {
 }
 
 #[no_mangle]
-pub extern "aapcs" fn _print_reg(reg: u32) {
-    println!("{reg}")
+extern "aapcs" fn _print_reg(reg: u32) {
+    println!("dec: {reg}, hex: {reg:x}")
 }
