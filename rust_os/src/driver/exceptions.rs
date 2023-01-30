@@ -1,14 +1,17 @@
-use core::ptr::read;
+//! Diese Datei beschreibt die exception handler und deren Initialisierung auf der Hardware
 
 use crate::{
-    println,
-    registers::Registers,
-    serial, sys_timer,
-    thread::{get_threads, State::*, ID},
+    get_psr,
+    memory_controller::get_abort_adress,
+    println, serial,
+    serial::Serial,
+    sys_timer::SysTimer,
+    thread::{get_threads, State::*, ThreadList},
     trampoline,
-    util::{demask_interrupts, idle, mask_interrupts},
+    util::{demask_interrupts, mask_interrupts},
+    Registers, USR_MODE,
 };
-use core::arch::asm;
+use core::{arch::asm, mem, ptr::read};
 use volatile_register::{RO, RW, WO};
 
 const IVT_ADDR: u32 = 0;
@@ -16,7 +19,6 @@ const AIC_ADDR: u32 = 0xFFFFF000;
 
 #[repr(C)]
 pub struct IVT {
-    // Eigentlich RW, aber wir sollten hier nicht lesen
     reset: WO<u32>,
     undef: WO<u32>,
     swi: WO<u32>,
@@ -25,8 +27,6 @@ pub struct IVT {
     reserved: WO<u32>,
     irq: WO<u32>,
     fiq: WO<u32>,
-    // Hier sind die pointer zu den echten handlern
-    // Wir können nicht unendlich weit springen, deswegen ein Offset von 5*4 = 20(dec) = 1*16+4*1 = 14(hex)
     pub undef_handler: WO<extern "aapcs" fn()>,
     pub swi_handler: WO<extern "aapcs" fn()>,
     prefetch_handler: WO<extern "aapcs" fn()>,
@@ -58,13 +58,6 @@ impl IVT {
             self.data_abort_handler.write(_dab_handler);
             self.undef_handler.write(_und_handler);
             self.swi_handler.write(_swi_handler);
-        }
-        unsafe {
-            SWI_VECTORS[0] = exit_handler as u32;
-            SWI_VECTORS[1] = fork_handler as u32;
-            SWI_VECTORS[2] = sleep_handler as u32;
-            SWI_VECTORS[3] = put_char_handler as u32;
-            SWI_VECTORS[4] = read_char_handler as u32;
         }
         self
     }
@@ -139,130 +132,109 @@ impl AIC {
     }
 }
 
-#[naked]
-extern "aapcs" fn _src1_handler() {
-    trampoline!(src1_handler, 4)
+trampoline! {_src1_handler=>src1_handler@4}
+trampoline! {_dab_handler=>dab_handler@8}
+trampoline! {_und_handler=>und_handler@4}
+trampoline! {_swi_handler=>swi_handler@0}
+
+#[inline(always)]
+fn end_handler(regs: &mut Registers) {
+    get_threads().put_state(regs);
+    demask_interrupts();
 }
 
-#[naked]
-extern "aapcs" fn _dab_handler() {
-    trampoline!(dab_handler, 8)
+fn timer_handler(threads: &mut ThreadList) {
+    for thread in threads.array.iter_mut().filter_map(|x| x.as_mut()) {
+        match thread.state {
+            Sleeping(ms) => {
+                // if we overflow (we go below zero), we set to Ready otherwise we remain Sleeping
+                thread.state = match ms.checked_sub(ms) {
+                    Some(new_ms) => Sleeping(new_ms),
+                    None => Ready,
+                }
+            }
+            _ => (),
+        }
+    }
+    println!("!");
 }
 
-#[naked]
-extern "aapcs" fn _und_handler() {
-    trampoline!(und_handler, 4)
+fn dbgu_handler(threads: &mut ThreadList) {
+    let dbgu = Serial::new();
+    let char = dbgu.read() as u32;
+    if char == 4 {
+        // ctrl+d is debug print
+        println!("{threads:#?}");
+        return;
+    }
+    for thread in threads.iter_mut() {
+        match thread.state {
+            WaitingForChar => {
+                thread.regs.r0 = char;
+                thread.state = Ready;
+            }
+            _ => (),
+        }
+    }
 }
 
-#[naked]
-extern "aapcs" fn _swi_handler() {
-    trampoline!(swi_handler, 0)
+extern "aapcs" fn src1_handler(regs: &mut Registers) {
+    let threads = get_threads();
+    threads.save_state(regs);
+    println!("Interrupt");
+    if SysTimer::new().status.read() == 1 {
+        timer_handler(threads);
+    } else if Serial::new().status.read() & serial::RXRDY != 0 {
+        dbgu_handler(threads);
+    } else {
+        println!("unknown interrupt")
+    }
+    threads.schedule_next();
+    threads.put_state(regs);
+    AIC::new().end_of_interrupt();
 }
 
 /// A function that is called when someone messed up
 /// It ends the current user thread
+#[inline(always)]
 fn exception_fault() {
-    let threads = get_threads();
-    let id = threads.curr_thread;
-    println!("Ending: {:?}", threads.get_thread(id));
-    threads.end_thread(id);
-}
-
-#[derive(Debug, Clone, Copy)]
-enum ExceptionState {
-    UND,
-    DAB,
-    IRQ,
-    SWI,
-    None,
-}
-
-static mut GLOBAL_EXC_STATE: ExceptionState = ExceptionState::None;
-
-fn get_exc_state() -> ExceptionState {
-    unsafe { GLOBAL_EXC_STATE }
-}
-
-fn set_exc_state(state: ExceptionState) {
-    unsafe { GLOBAL_EXC_STATE = state }
-}
-
-#[no_mangle]
-extern "aapcs" fn src1_handler(regs: &mut Registers) {
-    set_exc_state(ExceptionState::IRQ);
-    let timer = sys_timer::SysTimer::new();
-    let dbgu = serial::Serial::new();
-    let threads = get_threads();
-    threads.save_state(regs);
-    if timer.status.read() == 1 {
-        for mut thread in threads.array.iter_mut().filter_map(|&mut x| x) {
-            thread.state = match thread.state {
-                Sleeping(ms) => {
-                    // if we overflow (we go below zero), we set to Ready otherwise we remain Sleeping
-                    match ms.checked_sub(ms) {
-                        Some(new_ms) => Sleeping(new_ms),
-                        None => Ready,
-                    }
-                }
-                other => other,
-            }
-        }
-    } else if dbgu.status.read() & serial::RXRDY != 0 {
-        let char = dbgu.read() as u32;
-        for x in threads.array.iter_mut().filter(|x| x.is_some()) {
-            let thread = x.as_mut().unwrap();
-            thread.state = match thread.state {
-                WaitingForChar => {
-                    thread.regs.r0 = char;
-                    Ready
-                }
-                other => other,
-            }
-        }
+    get_psr!(psr = spsr);
+    let mode = psr & crate::MODE_RESET;
+    if mode == USR_MODE {
+        let threads = get_threads();
+        let id = threads.curr_thread;
+        println!(
+            "Exception Fault in User Mode: Ending the current thread: {:?}",
+            threads.get_thread(id)
+        );
+        threads.end_thread(id);
     } else {
-        println!("unknown interrupt")
+        panic!("Exception Fault while in mode {:?}", crate::show_mode(mode))
     }
-    println!("Scheduled next thread: {}", threads.schedule_next());
-    threads.put_state(regs);
-    set_exc_state(ExceptionState::None);
-    AIC::new().end_of_interrupt();
 }
 
-#[no_mangle]
 extern "aapcs" fn dab_handler(regs: &mut Registers) {
     mask_interrupts();
     println!(
-        "Data Abort at {:x} accessing {:x} while in state {:?}",
-        regs.lr,
-        super::memory_controller::get_abort_adress(),
-        get_exc_state()
+        "Data Abort at {:x} accessing {:x}",
+        regs.pc,
+        get_abort_adress()
     );
-    set_exc_state(ExceptionState::DAB);
     exception_fault();
-    set_exc_state(ExceptionState::None);
-    demask_interrupts();
-    idle(); // just wait for timer interrupt
+    end_handler(regs);
 }
 
-#[no_mangle]
 extern "aapcs" fn und_handler(regs: &mut Registers) {
     mask_interrupts();
-    let a = regs.lr;
-    println!(
-        "Undefined Instruction at {:x} ({a:x}) while in state {:?}",
-        unsafe { read((a - (a % 4)) as *const u32) },
-        get_exc_state()
-    );
-    set_exc_state(ExceptionState::UND);
+    println!("Undefined Instruction at {:x}", regs.pc);
     exception_fault();
-    set_exc_state(ExceptionState::None);
-    demask_interrupts();
-    idle();
+    end_handler(regs);
 }
+
+const SWI_CODE_NUM: usize = 5;
 
 #[derive(Debug)]
 pub enum SWICode {
-    #[allow(dead_code)]
     Exit,
     Fork,
     Sleep,
@@ -270,57 +242,41 @@ pub enum SWICode {
     ReadChar,
 }
 
-extern "aapcs" fn exit_handler() {
-    let threads = get_threads();
-    threads.end_thread(threads.curr_thread);
+impl From<u8> for SWICode {
+    fn from(value: u8) -> Self {
+        unsafe { mem::transmute(value) }
+    }
 }
 
-#[allow(improper_ctypes_definitions)]
-extern "aapcs" fn fork_handler(regs: &mut Registers) -> Option<ID> {
-    get_threads().create_thread(*regs).ok()
-}
-
-extern "aapcs" fn sleep_handler(ms: u32) {
-    get_threads().curr_mut_thread().state = Sleeping(ms);
-    get_threads().schedule_next();
-}
-
-extern "aapcs" fn put_char_handler(c: u8) {
-    println!("{}", c as char);
-}
-
-extern "aapcs" fn read_char_handler() {
-    get_threads().curr_mut_thread().state = WaitingForChar;
-    get_threads().schedule_next();
-}
-
-static mut SWI_VECTORS: [u32; 5] = [0; 5];
-
-#[no_mangle]
 extern "aapcs" fn swi_handler(regs: &mut Registers) {
     mask_interrupts();
-    set_exc_state(ExceptionState::SWI);
     let threads = get_threads();
     threads.save_state(regs);
     // ARM Documentation advises us to read the swi code from the instruction (8 bit imm)
     let _code = unsafe { read((regs.pc - 4) as *const u8) };
-    if _code > 4 {
-        exception_fault()
-    } else {
-        let code: SWICode = unsafe { core::mem::transmute(_code) };
-        println!("Software interrupt: {code:?}");
-        unsafe {
-            let func = *(SWI_VECTORS.as_ptr().offset(_code as isize));
-            asm!(
-                "mov lr, pc",
-                "add lr, #4",
-                "mov pc, {reg}",
-                reg = in(reg) func,
-                in("r0") regs.r0,
-            );
-        }
+    if _code >= SWI_CODE_NUM as u8 {
+        return end_handler(regs);
     }
-    threads.put_state(regs);
-    set_exc_state(ExceptionState::None);
-    demask_interrupts();
+    let code = SWICode::from(_code);
+    use SWICode::*;
+    match code {
+        Exit => _ = threads.end_thread(threads.curr_thread),
+        // Fork gibt C-like bei einem Fehler 0 zurück, da ja der idle-thread immer die id 0 hat.
+        // Dadurch kann kein neuer Thread jemals diese ID haben.
+        // Wir nutzen diesen Fakt, um die Größe des Rückgabewertes auf usize = u32 zu minimieren
+        Fork => {
+            regs.r0 = {
+                let regs = unsafe { read(regs.r0 as *const Registers) };
+                get_threads().create_thread(regs).unwrap_or_else(|err| {
+                    println!("Error in Fork handler: {err}");
+                    0
+                }) as u32
+            }
+        }
+        Sleep => get_threads().curr_mut_thread().state = Sleeping(regs.r0),
+        PutChar => Serial::new().write(regs.r0 as u8),
+        ReadChar => get_threads().curr_mut_thread().state = WaitingForChar,
+    }
+    threads.schedule_next();
+    end_handler(regs);
 }

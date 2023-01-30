@@ -1,30 +1,23 @@
-use crate::{println, registers::Registers};
+use crate::{thread, Registers};
 
-use super::syscalls::{fork, put_char, read_char, sleep, exit};
+use super::syscalls::{exit, fork, put_char, read_char, sleep};
 
-fn thread_function(c: char) {
-    println!("Child");
+#[allow(improper_ctypes_definitions)]
+extern "aapcs" fn child(c: char) {
     for _ in 0..20 {
         put_char(c);
-        sleep(3000);
+        sleep(5000);
     }
-    unsafe {
-        exit()
-    }
+    exit()
 }
 
 #[no_mangle]
-fn main_thread() {
-    println!("Application start");
+extern "aapcs" fn main_thread() {
     loop {
         let char = read_char();
-        println!("{char}");
-        let regs = &mut Registers::empty();
-        regs.r0 = char as u8 as u32;
-        regs.pc = thread_function as u32;
-        match fork(regs) {
-            Some(id) => println!("Child thread created @{id}"),
-            None => println!("Failed to create Child thread")
+        let regs = &(thread!(child(char as u8, 4)));
+        if fork(regs) == 0 {
+            exit()
         }
     }
 }
